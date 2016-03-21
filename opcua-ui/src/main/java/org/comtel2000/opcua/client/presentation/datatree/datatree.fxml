@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import javafx.geometry.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<TreeTableView fx:id="tableTree" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" tableMenuButtonVisible="true" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.comtel2000.opcua.client.presentation.datatree.DataTreeViewPresenter">
+  <columns>
+    <TreeTableColumn fx:id="display" editable="false" minWidth="100.0" prefWidth="250.0" text="DisplayName" />
+    <TreeTableColumn fx:id="browse" editable="false" prefWidth="150.0" text="BrowseName" />
+      <TreeTableColumn fx:id="node" editable="false" prefWidth="200.0" text="NodeId" />
+  </columns>
+   <columnResizePolicy>
+      <TreeTableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+   </columnResizePolicy>
+</TreeTableView>
