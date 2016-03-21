@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import javafx.geometry.*?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<HBox spacing="10.0" styleClass="tool-bar" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.comtel2000.opcua.client.presentation.connect.ConnectViewPresenter">
+   <children>
+      <ComboBox fx:id="address" editable="true" maxWidth="1.7976931348623157E308" minWidth="100.0" prefWidth="400.0" HBox.hgrow="SOMETIMES" />
+      <Region minWidth="0.0" prefWidth="10.0" HBox.hgrow="SOMETIMES" />
+<Button id="" fx:id="connectButton" minWidth="80.0" mnemonicParsing="false" onAction="#connect" text="connect" />
+<Button id="" fx:id="disconnectButton" contentDisplay="LEFT" minWidth="80.0" mnemonicParsing="false" onAction="#disconnect" text="disconnect" textAlignment="LEFT" />
+   </children>
+   <padding>
+      <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+   </padding>
+</HBox>

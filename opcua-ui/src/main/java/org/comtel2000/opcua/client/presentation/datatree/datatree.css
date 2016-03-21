@@ -1,0 +1,32 @@
+.tree-table-row-cell:variable .text{
+	-fx-fill: black;
+}
+.tree-table-row-cell:object .text{
+	-fx-fill: black;
+}
+
+.tree-table-row-cell:subscribed .text{
+	-fx-fill: red;
+}
+
+.tree-table-view .tree-icon-unspecified {
+	-fx-fill: white;
+	-fx-stroke: black;
+	-fx-stroke-width: 2.0;
+}
+
+.tree-table-view .tree-icon-referencetype, .tree-table-view .tree-icon-objecttype {
+	-fx-fill: gray;
+}
+
+.tree-table-view .tree-icon-object {
+	-fx-fill: darkgray;
+}
+
+.tree-table-view .tree-icon-variable {
+	-fx-fill: green;
+}
+
+.tree-table-view .tree-icon-method {
+	-fx-fill: red;
+}
