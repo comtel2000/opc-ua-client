@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.comtel2000</groupId>
 	<artifactId>opcua-ui</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1-STABLE</version>
 	<name>OPC-UA Client</name>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -16,7 +16,7 @@
         <dependency>
             <groupId>com.digitalpetri.opcua</groupId>
             <artifactId>ua-client</artifactId>
-            <version>1.1.0-SNAPSHOT</version>
+            <version>1.0.3</version>
         </dependency>
 		<dependency>
 			<groupId>junit</groupId>
@@ -42,7 +42,7 @@
 		<dependency>
 			<groupId>com.airhacks</groupId>
 			<artifactId>afterburner.fx</artifactId>
-			<version>1.6.3</version>
+			<version>1.6.2</version>
 		</dependency>
 	</dependencies>
 </project>

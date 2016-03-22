@@ -56,7 +56,7 @@ public class AttributesViewPresenter implements Initializable {
 	    return;
 	}
 	table.getItems().add(AttributeItem.get("DisplayName", b.getDisplayName().getText()));
-	table.getItems().add(AttributeItem.get("BrowseName", b.getBrowseName().toParseableString()));
+	table.getItems().add(AttributeItem.get("BrowseName", b.getBrowseName().getName()));
 	table.getItems().add(AttributeItem.get("NodeId", b.getNodeId().toParseableString()));
 	table.getItems().add(AttributeItem.get("NodeClass", b.getNodeClass().toString()));
 	table.getItems().add(AttributeItem.get("ReferenceType", b.getReferenceTypeId().toParseableString()));

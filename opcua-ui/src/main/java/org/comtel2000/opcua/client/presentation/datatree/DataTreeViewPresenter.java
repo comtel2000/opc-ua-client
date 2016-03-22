@@ -50,7 +50,7 @@ public class DataTreeViewPresenter implements Initializable {
 
 	display.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue().getDisplayName().getText()));
 
-	browse.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue().getBrowseName().toParseableString()));
+	browse.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue().getBrowseName().getName()));
 
 	node.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue().getNodeId() != null ? p.getValue().getValue().getNodeId().toParseableString() : ""));
 

@@ -24,12 +24,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpetri.opcua.sdk.client.OpcUaClient;
-import com.digitalpetri.opcua.sdk.client.SessionActivityListener;
 import com.digitalpetri.opcua.sdk.client.api.UaClient;
-import com.digitalpetri.opcua.sdk.client.api.UaSession;
 import com.digitalpetri.opcua.sdk.client.api.config.OpcUaClientConfig;
 import com.digitalpetri.opcua.sdk.client.api.identity.AnonymousProvider;
 import com.digitalpetri.opcua.sdk.client.api.subscriptions.UaSubscription;
+import com.digitalpetri.opcua.sdk.client.fsm.SessionStateEvent;
+import com.digitalpetri.opcua.sdk.client.fsm.SessionStateFsm.SessionStateListener;
 import com.digitalpetri.opcua.stack.client.UaTcpStackClient;
 import com.digitalpetri.opcua.stack.core.AttributeId;
 import com.digitalpetri.opcua.stack.core.Identifiers;
@@ -60,7 +60,7 @@ import com.digitalpetri.opcua.stack.core.types.structured.WriteValue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.UnmodifiableIterator;
 
-public class OpcUaClientConnector implements SessionActivityListener {
+public class OpcUaClientConnector implements SessionStateListener {
 
     protected final static Logger logger = LoggerFactory.getLogger(OpcUaClientConnector.class);
 
@@ -105,7 +105,7 @@ public class OpcUaClientConnector implements SessionActivityListener {
 	client = new OpcUaClient(config);
 
 	client.addFaultListener(fault -> logger.error("fault on {}", fault.getResponseHeader().getServiceResult()));
-	client.addSessionActivityListener(this);
+	client.addSessionStateListener(this);
 	return client.connect();
     }
 
@@ -180,30 +180,30 @@ public class OpcUaClientConnector implements SessionActivityListener {
     }
 
     @Override
-    public void onSessionActive(UaSession session) {
-	logger.info("active session id: {}", session.getSessionId());
+    public void onSessionActive(SessionStateEvent session) {
+	logger.info("active session id: {}", session);
 	if (listener != null) {
 	    listener.accept(Boolean.TRUE, null);
 	}
     }
 
     @Override
-    public void onSessionInactive(UaSession session) {
-	logger.info("inactive session id: {}", session.getSessionId());
+    public void onSessionInactive(SessionStateEvent session) {
+	logger.info("inactive session id: {}", session);
 	if (listener != null) {
 	    listener.accept(Boolean.FALSE, null);
 	}
     }
 
     public CompletableFuture<BrowseResult> getHierarchicalReferences(ExpandedNodeId node) {
-	if (!node.isLocal()){
+	if (!node.isLocal()) {
 	    CompletableFuture<BrowseResult> f = new CompletableFuture<>();
 	    f.completeExceptionally(new Exception("invalid node index: " + node));
 	    return f;
 	}
 	return getHierarchicalReferences(node.local().get());
     }
-    
+
     public CompletableFuture<BrowseResult> getHierarchicalReferences(NodeId node) {
 	UInteger nodeClassMask = UInteger.valueOf(NodeClass.Object.getValue() | NodeClass.Variable.getValue());
 	UInteger resultMask = UInteger.valueOf(BrowseResultMask.All.getValue());
@@ -231,11 +231,11 @@ public class OpcUaClientConnector implements SessionActivityListener {
     public CompletableFuture<StatusCode> write(WriteValue value) {
 	return client.write(newArrayList(value)).thenApply(WriteResponse::getResults).thenApply(d -> d[0]);
     }
-    
+
     public CompletableFuture<StatusCode> writeValue(NodeId node, DataValue value) {
 	return client.writeValues(newArrayList(node), newArrayList(value)).thenApply(d -> d.get(0));
     }
-    
+
     @PreDestroy
     public void shutdown() {
 	if (client != null) {
