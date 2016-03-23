@@ -46,7 +46,7 @@ public class OpcUAClient extends Application {
 	    System.exit(0);
 	});
 	stage.setScene(scene);
-	stage.getIcons().add(new Image(OpcUAClient.class.getResourceAsStream("opc_ua.png")));
+	stage.getIcons().add(new Image(OpcUAClient.class.getResourceAsStream("icon.png")));
 	stage.show();
 
     }

@@ -9,4 +9,4 @@
 [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
 ## Third Library License
-https://github.com/digitalpetri/ua-client-sdk (AGPL v3)
+[ua-client-sdk](https://github.com/digitalpetri/ua-client-sdk) (AGPL v3)
