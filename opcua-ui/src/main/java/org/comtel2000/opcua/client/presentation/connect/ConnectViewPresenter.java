@@ -50,7 +50,9 @@ public class ConnectViewPresenter implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle rb) {
 
-	address.getItems().addAll("opc.tcp://opcua.demo-this.com:51210/UA/SampleServer", "opc.tcp://localhost:62547/Quickstarts/DataAccessServer", "opc.tcp://localhost:62550/Quickstarts/HistoricalAccessServer",
+	address.getItems().addAll("opc.tcp://opcua.demo-this.com:51210/UA/SampleServer",
+		"opc.tcp://localhost:62547/Quickstarts/DataAccessServer",
+		"opc.tcp://localhost:62550/Quickstarts/HistoricalAccessServer",
 		"opc.tcp://localhost:62541/Quickstarts/ReferenceServer");
 	session.bind(addressUrl);
 
@@ -62,7 +64,8 @@ public class ConnectViewPresenter implements Initializable {
 	    }
 	}
 
-	state.connectedProperty().addListener((l, a, b) -> state.statusTextProperty().set(b ? String.format("connected to: [%s]", addressUrl.get()) : "disconnected"));
+	state.connectedProperty().addListener((l, a, b) -> state.statusTextProperty()
+		.set(b ? String.format("connected to: [%s]", addressUrl.get()) : "disconnected"));
 
 	address.disableProperty().bind(state.connectedProperty());
 	connectButton.disableProperty().bind(state.connectedProperty());

@@ -24,7 +24,8 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.transform.Transform;
 import javafx.util.Callback;
 
-public class DataTreeNodeRowFactory<T extends ReferenceDescription> implements Callback<TreeTableView<T>, TreeTableRow<T>> {
+public class DataTreeNodeRowFactory<T extends ReferenceDescription>
+	implements Callback<TreeTableView<T>, TreeTableRow<T>> {
 
     private final static Logger logger = LoggerFactory.getLogger(DataTreeNodeRowFactory.class);
 

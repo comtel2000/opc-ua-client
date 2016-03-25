@@ -66,15 +66,19 @@ public class AttributesViewPresenter implements Initializable {
 		if (dv == null || rd == null) {
 		    return;
 		}
-		Variant v = new Variant(OpcUaConverter.toWritableDataTypeObject(dv.getValue().getDataType().get(), event.getNewValue()));
-		WriteValue wv = new WriteValue(rd.getNodeId().local().get(), AttributeId.Value.uid(), null, new DataValue(v));
+		Variant v = new Variant(OpcUaConverter.toWritableDataTypeObject(dv.getValue().getDataType().get(),
+			event.getNewValue()));
+		WriteValue wv = new WriteValue(rd.getNodeId().local().get(), AttributeId.Value.uid(), null,
+			new DataValue(v));
 		connection.write(wv).whenCompleteAsync((s, t) -> {
 		    if (t != null) {
 			logger.error(t.getMessage(), t);
 		    } else {
-			logger.info("{} write '{}' -> '{}' [{}]", rd.getBrowseName(), event.getOldValue(), event.getNewValue(), s);
+			logger.info("{} write '{}' -> '{}' [{}]", rd.getBrowseName(), event.getOldValue(),
+				event.getNewValue(), s);
 		    }
-		    state.statusTextProperty().set(String.format("write to %s %s", rd.getBrowseName(), (s.isGood() ? "succeed" : "failed: " + s)));
+		    state.statusTextProperty().set(String.format("write to %s %s", rd.getBrowseName(),
+			    (s.isGood() ? "succeed" : "failed: " + s)));
 		    updateAttributes(rd);
 		} , Platform::runLater);
 	    } catch (Exception e) {
@@ -110,12 +114,16 @@ public class AttributesViewPresenter implements Initializable {
 		if (!d.isEmpty()) {
 		    DataValue value = d.get(0);
 		    selectedDataValue.set(value);
-		    table.getItems().add(AttributeItem.get("Value", OpcUaConverter.toString(value.getValue()), isSupported(value)));
+		    table.getItems().add(
+			    AttributeItem.get("Value", OpcUaConverter.toString(value.getValue()), isSupported(value)));
 		    if (value.getValue().getDataType().isPresent()) {
-			table.getItems().add(AttributeItem.get("DataType", OpcUaConverter.toDataTypeString(value.getValue().getDataType().get())));
+			table.getItems().add(AttributeItem.get("DataType",
+				OpcUaConverter.toDataTypeString(value.getValue().getDataType().get())));
 		    }
-		    table.getItems().add(AttributeItem.get("ServerTime", OpcUaConverter.toString(value.getServerTime())));
-		    table.getItems().add(AttributeItem.get("StatusCode", OpcUaConverter.toString(value.getStatusCode())));
+		    table.getItems()
+			    .add(AttributeItem.get("ServerTime", OpcUaConverter.toString(value.getServerTime())));
+		    table.getItems()
+			    .add(AttributeItem.get("StatusCode", OpcUaConverter.toString(value.getStatusCode())));
 		}
 	    });
 	}

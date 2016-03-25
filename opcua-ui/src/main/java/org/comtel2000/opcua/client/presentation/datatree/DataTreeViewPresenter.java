@@ -50,9 +50,11 @@ public class DataTreeViewPresenter implements Initializable {
 
 	display.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue().getDisplayName().getText()));
 
-	browse.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue().getBrowseName().toParseableString()));
+	browse.setCellValueFactory(
+		p -> new ReadOnlyStringWrapper(p.getValue().getValue().getBrowseName().toParseableString()));
 
-	node.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue().getNodeId() != null ? p.getValue().getValue().getNodeId().toParseableString() : ""));
+	node.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue().getNodeId() != null
+		? p.getValue().getValue().getNodeId().toParseableString() : ""));
 
 	tableTree.rootProperty().bind(state.rootNodeProperty());
 	tableTree.getSelectionModel().selectedItemProperty().addListener((l, a, b) -> nodeChanged(b));
@@ -79,12 +81,9 @@ public class DataTreeViewPresenter implements Initializable {
 		state.subscribeTreeItemList().add(item.getValue());
 	    }
 	});
-	MenuItem writeItem = new MenuItem("Write..");
-	writeItem.setOnAction(a -> logger.error("write not yet supported"));
-	menu.getItems().addAll(monitorItem, writeItem);
+	menu.getItems().addAll(monitorItem);
 
 	monitorItem.disableProperty().bind(tableTree.getSelectionModel().selectedItemProperty().isNull());
-	writeItem.disableProperty().bind(tableTree.getSelectionModel().selectedItemProperty().isNull());
 
 	tableTree.setContextMenu(menu);
     }

@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory;
 import com.digitalpetri.opcua.stack.core.Identifiers;
 import com.digitalpetri.opcua.stack.core.types.structured.BrowseResult;
 import com.digitalpetri.opcua.stack.core.types.structured.ReferenceDescription;
-import com.google.common.base.Predicate;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -35,7 +34,7 @@ public class DataTreeNode extends TreeItem<ReferenceDescription> {
     private final static java.util.function.Predicate<? super ReferenceDescription> hasNotifierFilter = (r) -> {
 	return r != null && !Identifiers.HasNotifier.equals(r.getReferenceTypeId());
     };
-    
+
     public DataTreeNode(OpcUaClientConnector c, ReferenceDescription rd) {
 	super(rd, createGraphic(rd));
 	this.connection = c;
@@ -59,7 +58,8 @@ public class DataTreeNode extends TreeItem<ReferenceDescription> {
 	}
 
 	CompletableFuture<BrowseResult> result = connection.getHierarchicalReferences(getValue().getNodeId());
-	result.thenApply(r -> Arrays.stream(r.getReferences()).filter(hasNotifierFilter).map(this::createNode).collect(Collectors.toList())).whenCompleteAsync(this::updateChildren, Platform::runLater);
+	result.thenApply(r -> Arrays.stream(r.getReferences()).filter(hasNotifierFilter).map(this::createNode)
+		.collect(Collectors.toList())).whenCompleteAsync(this::updateChildren, Platform::runLater);
 	return FXCollections.emptyObservableList();
     }
 
@@ -69,13 +69,14 @@ public class DataTreeNode extends TreeItem<ReferenceDescription> {
 	    updated.set(false);
 	    return;
 	}
-	if (!super.getChildren().isEmpty()){
+	if (!super.getChildren().isEmpty()) {
 	    logger.error("double update detected: {}", list);
 	    return;
 	}
 	leaf.set(list.isEmpty());
 	if (!super.getChildren().addAll(list)) {
-	    fireEvent(new TreeModificationEvent<ReferenceDescription>(valueChangedEvent(), DataTreeNode.this, getValue()));
+	    fireEvent(new TreeModificationEvent<ReferenceDescription>(valueChangedEvent(), DataTreeNode.this,
+		    getValue()));
 	}
 
     }
@@ -87,7 +88,7 @@ public class DataTreeNode extends TreeItem<ReferenceDescription> {
     private void fireEvent(TreeModificationEvent<ReferenceDescription> evt) {
 	Event.fireEvent(this, evt);
     }
-    
+
     @Override
     public String toString() {
 	return "DataTreeNode [updated=" + updated + ", leaf=" + leaf + ", children=" + super.getChildren().size() + "]";

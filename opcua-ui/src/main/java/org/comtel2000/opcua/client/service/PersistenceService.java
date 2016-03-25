@@ -121,7 +121,8 @@ public class PersistenceService {
 
 	byte[] value = prefs.getByteArray(validateKey(key), null);
 	if (value != null && value.length > 0) {
-	    try (ObjectInputStream stream = new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(value)))) {
+	    try (ObjectInputStream stream = new ObjectInputStream(
+		    new ByteArrayInputStream(Base64.getDecoder().decode(value)))) {
 		property.set((T) stream.readObject());
 	    } catch (Exception e) {
 		prefs.remove(key);

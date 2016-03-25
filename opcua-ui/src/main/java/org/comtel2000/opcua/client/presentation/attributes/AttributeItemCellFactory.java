@@ -7,7 +7,8 @@ import javafx.util.Callback;
 import javafx.util.StringConverter;
 import javafx.util.converter.DefaultStringConverter;
 
-public class AttributeItemCellFactory implements Callback<TableColumn<AttributeItem, String>, TableCell<AttributeItem, String>> {
+public class AttributeItemCellFactory
+	implements Callback<TableColumn<AttributeItem, String>, TableCell<AttributeItem, String>> {
 
     private StringConverter<String> converter;
 
@@ -27,6 +28,5 @@ public class AttributeItemCellFactory implements Callback<TableColumn<AttributeI
 	    }
 	};
     }
-    
 
 }

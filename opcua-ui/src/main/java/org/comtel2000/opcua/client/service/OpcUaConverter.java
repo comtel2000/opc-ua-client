@@ -104,8 +104,8 @@ public class OpcUaConverter {
 	}
 
     }
-    
-    public static Object toWritableDataTypeObject(NodeId node, String value) throws Exception{
+
+    public static Object toWritableDataTypeObject(NodeId node, String value) throws Exception {
 	if (node == null || node.isNull()) {
 	    throw new Exception("not parsable value: " + String.valueOf(value));
 	}
@@ -114,10 +114,10 @@ public class OpcUaConverter {
 	}
 	switch (((UInteger) node.getIdentifier()).intValue()) {
 	case 1:
-	    if ("0".equals(value)){
+	    if ("0".equals(value)) {
 		return Boolean.FALSE;
 	    }
-	    if ("1".equals(value)){
+	    if ("1".equals(value)) {
 		return Boolean.TRUE;
 	    }
 	    return Boolean.valueOf(value);
@@ -144,7 +144,8 @@ public class OpcUaConverter {
 	case 12:
 	    return value;
 	case 13:
-	    return new DateTime(Date.from(ZonedDateTime.from(DateTimeFormatter.ISO_DATE_TIME.parse(value)).toInstant()));
+	    return new DateTime(
+		    Date.from(ZonedDateTime.from(DateTimeFormatter.ISO_DATE_TIME.parse(value)).toInstant()));
 	case 14:
 	    return UUID.fromString(value);
 	case 15:
@@ -157,7 +158,7 @@ public class OpcUaConverter {
 	}
 
     }
-    
+
     public static ZonedDateTime toZonedDateTime(DateTime time) {
 	return Instant.ofEpochMilli(time.getJavaTime()).atZone(ZoneOffset.systemDefault());
     }

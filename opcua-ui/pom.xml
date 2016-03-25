@@ -1,42 +1,25 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.comtel2000</groupId>
-	<artifactId>opc-ua-client-fx</artifactId>
-	<version>1.0.0-SNAPSHOT</version>
-	<name>OPC-UA Client</name>
+	<parent>
+		<groupId>org.comtel2000</groupId>
+		<artifactId>opc-ua-parent</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+	</parent>
+	<artifactId>opcua-ui</artifactId>
 	<description>OPC-UA Client UI</description>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
-		<junit.version>4.12</junit.version>
-		<slf4j.version>1.7.18</slf4j.version>
+		<app.main.class>org.comtel2000.opcua.client.OpcUAClient</app.main.class>
 	</properties>
-		<licenses>
-		<license>
-			<name>Apache License, Version 2.0</name>
-			<url>http://www.apache.org/licenses/LICENSE-2.0</url>
-		</license>
-	</licenses>
-	<inceptionYear>2016</inceptionYear>
-	<organization>
-		<name>comtel2000</name>
-		<url>http://comtel2000.org</url>
-	</organization>
-	<developers>
-		<developer>
-			<name>J.Zimmermann</name>
-			<email>comtel2000@gmail.com</email>
-			<organization>comtel2000</organization>
-		</developer>
-	</developers>
 	<dependencies>
-        <dependency>
-            <groupId>com.digitalpetri.opcua</groupId>
-            <artifactId>ua-client</artifactId>
-            <version>1.1.0-SNAPSHOT</version>
-        </dependency>
+		<dependency>
+			<groupId>com.digitalpetri.opcua</groupId>
+			<artifactId>ua-client</artifactId>
+			<version>1.1.0-SNAPSHOT</version>
+		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -60,4 +43,67 @@
 			<version>1.6.3</version>
 		</dependency>
 	</dependencies>
+
+	<profiles>
+		<profile>
+			<id>default</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-resources-plugin</artifactId>
+						<version>2.7</version>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-assembly-plugin</artifactId>
+						<version>2.4.1</version>
+						<executions>
+							<execution>
+								<id>make-assembly</id>
+								<phase>package</phase>
+								<goals>
+									<goal>single</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<descriptorId>jar-with-dependencies</descriptorId>
+							<finalName>opc-ua-client</finalName>
+							<archive>
+								<manifest>
+									<mainClass>${app.main.class}</mainClass>
+									<addDefaultImplementationEntries>
+										true
+									</addDefaultImplementationEntries>
+								</manifest>
+							</archive>
+						</configuration>
+					</plugin>
+				</plugins>
+				<resources>
+					<resource>
+						<directory>src/main/java</directory>
+						<filtering>false</filtering>
+						<includes>
+							<include>**/*.fxml</include>
+							<include>**/*.css</include>
+							<include>**/*.properties</include>
+							<include>**/*.ttf</include>
+							<include>**/*.png</include>
+						</includes>
+					</resource>
+					<resource>
+						<directory>src/main/resources</directory>
+						<includes>
+							<include>**/*</include>
+						</includes>
+					</resource>
+				</resources>
+			</build>
+		</profile>
+	</profiles>
 </project>

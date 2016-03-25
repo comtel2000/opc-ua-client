@@ -72,17 +72,21 @@ public class EventsViewPresenter implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle rb) {
 
-	id.setCellValueFactory(p -> new ReadOnlyObjectWrapper<UInteger>(p.getValue().getSubscription().getSubscriptionId()));
+	id.setCellValueFactory(
+		p -> new ReadOnlyObjectWrapper<UInteger>(p.getValue().getSubscription().getSubscriptionId()));
 
-	mode.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getMonitoredItem().isPresent() ? p.getValue().getMonitoredItem().get().getMonitoringMode().toString() : ""));
+	mode.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getMonitoredItem().isPresent()
+		? p.getValue().getMonitoredItem().get().getMonitoringMode().toString() : ""));
 
 	variable.setCellValueFactory(p -> p.getValue().nameProperty());
 
 	value.setCellValueFactory(p -> p.getValue().valueProperty());
 
-	samplingrate.setCellValueFactory(p -> new ReadOnlyObjectWrapper<Double>(p.getValue().getSubscription().getRevisedPublishingInterval()));
+	samplingrate.setCellValueFactory(
+		p -> new ReadOnlyObjectWrapper<Double>(p.getValue().getSubscription().getRevisedPublishingInterval()));
 
-	quality.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getMonitoredItem().isPresent() ? OpcUaConverter.toString(p.getValue().getMonitoredItem().get().getStatusCode()) : ""));
+	quality.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getMonitoredItem().isPresent()
+		? OpcUaConverter.toString(p.getValue().getMonitoredItem().get().getStatusCode()) : ""));
 
 	timestamp.setCellValueFactory(p -> p.getValue().timestampProperty());
 
@@ -152,13 +156,10 @@ public class EventsViewPresenter implements Initializable {
 	removeItem.setOnAction(a -> remove(table.getSelectionModel().getSelectedItem()));
 	MenuItem removeAllItem = new MenuItem("Remove All");
 	removeAllItem.setOnAction(a -> removeAll());
-	MenuItem writeItem = new MenuItem("Write..");
-	writeItem.setOnAction(a -> logger.error("write not supported"));
-	menu.getItems().addAll(writeItem, removeItem, removeAllItem);
+	menu.getItems().addAll(removeItem, removeAllItem);
 
 	removeItem.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
 	removeAllItem.disableProperty().bind(Bindings.isEmpty(table.getItems()));
-	writeItem.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
 
 	table.setContextMenu(menu);
     }

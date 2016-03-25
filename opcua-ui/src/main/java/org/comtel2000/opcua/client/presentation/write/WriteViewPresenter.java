@@ -77,15 +77,6 @@ public class WriteViewPresenter implements Initializable {
 
     }
 
-    private Object convertValue(ReferenceDescription b, String data) {
-	if (b == null || data == null) {
-	    return null;
-	}
-
-	System.err.println(b.getTypeDefinition());
-	return data;
-    }
-
     @FXML
     void cancel(ActionEvent event) {
 	reference.set(null);
