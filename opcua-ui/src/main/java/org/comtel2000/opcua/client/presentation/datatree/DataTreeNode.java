@@ -20,6 +20,7 @@ import javafx.collections.ObservableList;
 import javafx.event.Event;
 import javafx.scene.Node;
 import javafx.scene.control.TreeItem;
+import javafx.scene.layout.Pane;
 import javafx.scene.shape.Rectangle;
 
 public class DataTreeNode extends TreeItem<ReferenceDescription> {
@@ -41,9 +42,11 @@ public class DataTreeNode extends TreeItem<ReferenceDescription> {
     }
 
     private static Node createGraphic(ReferenceDescription rd) {
-	Rectangle rect = new Rectangle(8, 8);
+	Rectangle rect = new Rectangle(4, 4, 8, 8);
 	rect.getStyleClass().add("tree-icon-" + rd.getNodeClass().toString().toLowerCase());
-	return rect;
+	Pane pane = new Pane(rect);
+	pane.getStyleClass().add("tree-icon-pane");
+	return pane;
     }
 
     @Override

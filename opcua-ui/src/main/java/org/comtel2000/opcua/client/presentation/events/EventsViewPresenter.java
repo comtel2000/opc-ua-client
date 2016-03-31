@@ -28,6 +28,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.effect.BlendMode;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.TransferMode;
 
 public class EventsViewPresenter implements Initializable {
@@ -94,6 +95,12 @@ public class EventsViewPresenter implements Initializable {
 
 	table.setItems(monitoredItems);
 
+	table.setOnKeyPressed(e -> {
+	    if (e.getCode() == KeyCode.DELETE){
+		remove(table.getSelectionModel().getSelectedItem());
+	    }
+	});
+	
 	table.setOnDragOver(event -> {
 	    event.acceptTransferModes(TransferMode.COPY);
 	    event.consume();

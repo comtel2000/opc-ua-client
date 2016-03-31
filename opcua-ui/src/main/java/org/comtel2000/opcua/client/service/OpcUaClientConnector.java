@@ -2,8 +2,7 @@ package org.comtel2000.opcua.client.service;
 
 import static com.digitalpetri.opcua.stack.core.types.builtin.unsigned.Unsigned.uint;
 
-import java.time.Instant;
-import java.time.ZoneOffset;
+import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -66,9 +65,9 @@ public class OpcUaClientConnector implements SessionActivityListener {
 
     private final AtomicReference<String> urlRef = new AtomicReference<>();
 
-    private final AtomicLong clientHandles = new AtomicLong();
+    private final AtomicReference<OpcUaClient> client = new AtomicReference<>();
 
-    private OpcUaClient client;
+    private final AtomicLong clientHandles = new AtomicLong();
 
     private final String name;
 
@@ -91,25 +90,20 @@ public class OpcUaClientConnector implements SessionActivityListener {
 	EndpointDescription endpoint;
 	try {
 	    EndpointDescription[] endpoints = UaTcpStackClient.getEndpoints(url).get();
-	    endpoint = Arrays.stream(endpoints)
-		    .sorted((e1, e2) -> e2.getSecurityLevel().intValue() - e1.getSecurityLevel().intValue()).findFirst()
+	    endpoint = Arrays.stream(endpoints).sorted((e1, e2) -> e2.getSecurityLevel().intValue() - e1.getSecurityLevel().intValue()).findFirst()
 		    .orElseThrow(() -> new Exception("no endpoints returned"));
 	} catch (Exception e) {
-	    CompletableFuture<UaClient> f = new CompletableFuture<>();
-	    f.completeExceptionally(e);
-	    return f;
+	    return buildCompleteExceptionally(UaClient.class, e);
 	}
 
-	OpcUaClientConfig config = OpcUaClientConfig.builder().setApplicationName(LocalizedText.english(name))
-		.setApplicationUri("urn:comtel:opcua:client").setEndpoint(endpoint)
+	OpcUaClientConfig config = OpcUaClientConfig.builder().setApplicationName(LocalizedText.english(name)).setApplicationUri("urn:comtel:opcua:client").setEndpoint(endpoint)
 		.setIdentityProvider(new AnonymousProvider()).setRequestTimeout(uint(5000)).build();
 
-	client = new OpcUaClient(config);
+	client.set(new OpcUaClient(config));
+	client.get().addFaultListener(fault -> logger.error("fault on {}", fault.getResponseHeader().getServiceResult()));
+	client.get().addSessionActivityListener(this);
 
-	client.addFaultListener(fault -> logger.error("fault on {}", fault.getResponseHeader().getServiceResult()));
-	client.addSessionActivityListener(this);
-
-	return client.connect();
+	return client.get().connect();
     }
 
     public String getUrl() {
@@ -117,21 +111,21 @@ public class OpcUaClientConnector implements SessionActivityListener {
     }
 
     public Optional<OpcUaClient> getClient() {
-	return Optional.ofNullable(client);
+	return Optional.ofNullable(client.get());
     }
 
-    public CompletableFuture<UaSubscription> subscribe(double interval, ReferenceDescription rd)
-	    throws InterruptedException, ExecutionException {
+    public CompletableFuture<UaSubscription> subscribe(double interval, ReferenceDescription rd) throws InterruptedException, ExecutionException {
+	if (client.get() == null){
+	    return buildCompleteExceptionally(UaSubscription.class, new IOException("not connected"));
+	}
 	NodeId nodeId = rd.getNodeId().local().get();
-	Optional<UaSubscription> subItem = client.getSubscriptionManager().getSubscriptions().stream().filter(
-		s -> s.getMonitoredItems().stream().anyMatch(m -> m.getReadValueId().getNodeId().equals(nodeId)))
-		.findFirst();
+	Optional<UaSubscription> subItem = client.get().getSubscriptionManager().getSubscriptions().stream()
+		.filter(s -> s.getMonitoredItems().stream().anyMatch(m -> m.getReadValueId().getNodeId().equals(nodeId))).findFirst();
 	if (subItem.isPresent()) {
-	    throw new ExecutionException(
-		    new Exception("ReferenceDescription already monitored: " + rd.getBrowseName().getName()));
+	    throw new ExecutionException(new Exception("ReferenceDescription already monitored: " + rd.getBrowseName().getName()));
 	}
 	ReadValueId readValueId = new ReadValueId(nodeId, AttributeId.Value.uid(), null, QualifiedName.NULL_VALUE);
-	UaSubscription subscription = client.getSubscriptionManager().createSubscription(interval).get();
+	UaSubscription subscription = client.get().getSubscriptionManager().createSubscription(interval).get();
 	UInteger clientHandle = uint(clientHandles.getAndIncrement());
 	MonitoringParameters parameters = new MonitoringParameters(clientHandle,
 
@@ -143,19 +137,23 @@ public class OpcUaClientConnector implements SessionActivityListener {
 
 	true); // discard oldest
 
-	MonitoredItemCreateRequest request = new MonitoredItemCreateRequest(readValueId, MonitoringMode.Reporting,
-		parameters);
-	return subscription.createMonitoredItems(TimestampsToReturn.Both, Collections.singletonList(request))
-		.thenApply(r -> subscription);
+	MonitoredItemCreateRequest request = new MonitoredItemCreateRequest(readValueId, MonitoringMode.Reporting, parameters);
+	return subscription.createMonitoredItems(TimestampsToReturn.Both, Collections.singletonList(request)).thenApply(r -> subscription);
     }
 
     public CompletableFuture<UaSubscription> unsubscribe(UInteger subscriptionId) {
+	if (client.get() == null){
+	    return buildCompleteExceptionally(UaSubscription.class, new IOException("not connected"));
+	}
 	logger.debug("remove subscriptionId: {}", subscriptionId);
-	return client.getSubscriptionManager().deleteSubscription(subscriptionId);
+	return client.get().getSubscriptionManager().deleteSubscription(subscriptionId);
     }
 
     public void unsubscribeAll() {
-	UnmodifiableIterator<UaSubscription> it = client.getSubscriptionManager().getSubscriptions().iterator();
+	if (client.get() == null){
+	    return;
+	}
+	UnmodifiableIterator<UaSubscription> it = client.get().getSubscriptionManager().getSubscriptions().iterator();
 	List<CompletableFuture<UaSubscription>> futures = new ArrayList<>();
 	while (it.hasNext()) {
 	    futures.add(unsubscribe(it.next().getSubscriptionId()));
@@ -168,26 +166,28 @@ public class OpcUaClientConnector implements SessionActivityListener {
     }
 
     public CompletableFuture<UaClient> disconnect() {
-	return client.disconnect();
+	if (client.get() == null){
+	    return buildCompleteExceptionally(UaClient.class, new IOException("not connected"));
+	}
+	return client.get().disconnect();
     }
 
     public CompletableFuture<Tuple2<ServerState, ZonedDateTime>> readServerStateAndTime() {
-	List<NodeId> nodeIds = Lists.newArrayList(Identifiers.Server_ServerStatus_State,
-		Identifiers.Server_ServerStatus_CurrentTime);
-	return client.readValues(0.0, TimestampsToReturn.Both, nodeIds)
-		.thenApply(values -> new Tuple2<ServerState, ZonedDateTime>(
-			ServerState.from((Integer) values.get(0).getValue().getValue()),
-			toZonedDateTime((DateTime) values.get(1).getValue().getValue())));
-    }
-
-    private static ZonedDateTime toZonedDateTime(DateTime time) {
-	return Instant.ofEpochMilli(time.getJavaTime()).atZone(ZoneOffset.systemDefault());
+	if (client.get() == null){
+	    return buildCompleteExceptionally(new CompletableFuture<Tuple2<ServerState, ZonedDateTime>>(), new IOException("not connected"));
+	}
+	List<NodeId> nodeIds = Lists.newArrayList(Identifiers.Server_ServerStatus_State, Identifiers.Server_ServerStatus_CurrentTime);
+	return client.get().readValues(0.0, TimestampsToReturn.Both, nodeIds)
+		.thenApply(values -> new Tuple2<ServerState, ZonedDateTime>(ServerState.from((Integer) values.get(0).getValue().getValue()),
+			OpcUaConverter.toZonedDateTime((DateTime) values.get(1).getValue().getValue())));
     }
 
     public CompletableFuture<ServerState> readServerState() {
+	if (client.get() == null){
+	    return buildCompleteExceptionally(ServerState.class, new IOException("not connected"));
+	}
 	List<NodeId> nodeIds = Collections.singletonList(Identifiers.Server_ServerStatus_State);
-	return client.readValues(0.0, TimestampsToReturn.Both, nodeIds)
-		.thenApply(values -> ServerState.from((Integer) values.get(0).getValue().getValue()));
+	return client.get().readValues(0.0, TimestampsToReturn.Both, nodeIds).thenApply(values -> ServerState.from((Integer) values.get(0).getValue().getValue()));
     }
 
     @Override
@@ -218,44 +218,55 @@ public class OpcUaClientConnector implements SessionActivityListener {
     public CompletableFuture<BrowseResult> getHierarchicalReferences(NodeId node) {
 	UInteger nodeClassMask = uint(NodeClass.Object.getValue() | NodeClass.Variable.getValue());
 	UInteger resultMask = uint(BrowseResultMask.All.getValue());
-	BrowseDescription bd = new BrowseDescription(node, BrowseDirection.Forward, Identifiers.HierarchicalReferences,
-		true, nodeClassMask, resultMask);
+	BrowseDescription bd = new BrowseDescription(node, BrowseDirection.Forward, Identifiers.HierarchicalReferences, true, nodeClassMask, resultMask);
 	return browse(bd);
     }
 
     public ReferenceDescription getRootNode(String displayName) {
-	return new ReferenceDescription(Identifiers.RootFolder, Boolean.TRUE, Identifiers.RootFolder.expanded(),
-		QualifiedName.parse("Root"), LocalizedText.english(displayName), NodeClass.Unspecified,
-		ExpandedNodeId.NULL_VALUE);
+	return new ReferenceDescription(Identifiers.RootFolder, Boolean.TRUE, Identifiers.RootFolder.expanded(), QualifiedName.parse("Root"), LocalizedText.english(displayName),
+		NodeClass.Unspecified, ExpandedNodeId.NULL_VALUE);
     }
 
     public CompletableFuture<BrowseResult> browse(BrowseDescription nodeToBrowse) {
-	return client.browse(nodeToBrowse);
+	if (client.get() == null){
+	    return buildCompleteExceptionally(BrowseResult.class, new IOException("not connected"));
+	}
+	return client.get().browse(nodeToBrowse);
     }
 
     public CompletableFuture<List<DataValue>> read(NodeId node, AttributeId attr) {
-	return client.read(0.0, TimestampsToReturn.Both, Collections.singletonList(node),
-		Collections.singletonList(attr.uid()));
+	if (client.get() == null){
+	    return buildCompleteExceptionally(new CompletableFuture<List<DataValue>>(), new IOException("not connected"));
+	}
+	return client.get().read(0.0, TimestampsToReturn.Both, Collections.singletonList(node), Collections.singletonList(attr.uid()));
     }
 
     public CompletableFuture<List<DataValue>> readValues(List<NodeId> nodeIds) {
-	return client.readValues(0.0, TimestampsToReturn.Both, nodeIds);
+	if (client.get() == null){
+	    return buildCompleteExceptionally(new CompletableFuture<List<DataValue>>(), new IOException("not connected"));
+	}
+	return client.get().readValues(0.0, TimestampsToReturn.Both, nodeIds);
     }
 
     public CompletableFuture<StatusCode> write(WriteValue value) {
-	return client.write(Collections.singletonList(value)).thenApply(WriteResponse::getResults).thenApply(d -> d[0]);
+	if (client.get() == null){
+	    return buildCompleteExceptionally(StatusCode.class, new IOException("not connected"));
+	}
+	return client.get().write(Collections.singletonList(value)).thenApply(WriteResponse::getResults).thenApply(d -> d[0]);
     }
 
     public CompletableFuture<StatusCode> writeValue(NodeId node, DataValue value) {
-	return client.writeValues(Collections.singletonList(node), Collections.singletonList(value))
-		.thenApply(d -> d.get(0));
+	if (client.get() == null){
+	    return buildCompleteExceptionally(StatusCode.class, new IOException("not connected"));
+	}
+	return client.get().writeValues(Collections.singletonList(node), Collections.singletonList(value)).thenApply(d -> d.get(0));
     }
 
     @PreDestroy
     public void shutdown() {
-	if (client != null) {
+	if (client.get() != null) {
 	    try {
-		client.disconnect().get();
+		client.get().disconnect().get();
 	    } catch (InterruptedException | ExecutionException e) {
 		logger.error(e.getMessage(), e);
 	    }
@@ -263,4 +274,13 @@ public class OpcUaClientConnector implements SessionActivityListener {
 	Stack.releaseSharedResources(1, TimeUnit.SECONDS);
     }
 
+    private <T> CompletableFuture<T> buildCompleteExceptionally(Class<T> cl, Throwable th){
+	CompletableFuture<T> cf = new CompletableFuture<>();
+	cf.completeExceptionally(th);
+	return cf;
+    }
+    private <T> CompletableFuture<T> buildCompleteExceptionally(CompletableFuture<T> cf, Throwable th){
+	cf.completeExceptionally(th);
+	return cf;
+    }
 }

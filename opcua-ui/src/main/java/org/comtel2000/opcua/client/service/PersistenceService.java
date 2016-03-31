@@ -14,6 +14,7 @@ import java.lang.annotation.Target;
 import java.util.Base64;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
+import java.util.stream.Collectors;
 
 import javax.annotation.PreDestroy;
 
@@ -27,6 +28,8 @@ import javafx.beans.property.LongProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.Property;
 import javafx.beans.property.StringProperty;
+import javafx.collections.ListChangeListener.Change;
+import javafx.collections.ObservableList;
 
 /**
  * This class allows applications to bind {@link Property} to
@@ -121,8 +124,7 @@ public class PersistenceService {
 
 	byte[] value = prefs.getByteArray(validateKey(key), null);
 	if (value != null && value.length > 0) {
-	    try (ObjectInputStream stream = new ObjectInputStream(
-		    new ByteArrayInputStream(Base64.getDecoder().decode(value)))) {
+	    try (ObjectInputStream stream = new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(value)))) {
 		property.set((T) stream.readObject());
 	    } catch (Exception e) {
 		prefs.remove(key);
@@ -302,6 +304,32 @@ public class PersistenceService {
 	    property.set(value);
 	}
 	property.addListener(o -> prefs.put(key, property.getValue()));
+    }
+
+    /**
+     * Generates a bidirectional binding between the {@link ObservableList} and
+     * the application store value identified by the {@code key} {@link String}.
+     * 
+     * @param observableList
+     *            {@link ObservableList} to bind
+     * @param key
+     *            unique application store key
+     */
+    public void bind(final ObservableList<String> observableList, String key) {
+	String value = prefs.get(validateKey(key), null);
+	if (value != null && value.length() > 1) {
+	    for (String v : value.split("\u001e")) {
+		if (v != null && v.length() > 1 && !observableList.contains(v)) {
+		    observableList.add(v);
+		}
+	    }
+	}
+	observableList.addListener((Change<? extends CharSequence> c) -> {
+	    if (c.next()) {
+		String joined = c.getList().stream().collect(Collectors.joining("\u001e"));
+		prefs.put(key, joined);
+	    }
+	});
     }
 
     private final static String validateKey(String key) {
