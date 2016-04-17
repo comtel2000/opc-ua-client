@@ -1,3 +1,16 @@
+/*******************************************************************************
+ * Copyright (c) 2016 comtel2000
+ *
+ * Licensed under the Apache License, version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at:
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ *******************************************************************************/
 package org.comtel2000.opcua.client.presentation.events;
 
 import java.net.URL;
@@ -33,163 +46,166 @@ import javafx.scene.input.TransferMode;
 
 public class EventsViewPresenter implements Initializable {
 
-    @Inject
-    OpcUaClientConnector connection;
+  @Inject
+  OpcUaClientConnector connection;
 
-    @Inject
-    StatusBinding state;
+  @Inject
+  StatusBinding state;
 
-    private final ObservableList<MonitoredEvent> monitoredItems = FXCollections.observableArrayList();
+  private final ObservableList<MonitoredEvent> monitoredItems = FXCollections.observableArrayList();
 
-    @FXML
-    private TableView<MonitoredEvent> table;
+  @FXML
+  private TableView<MonitoredEvent> table;
 
-    @FXML
-    private TableColumn<MonitoredEvent, UInteger> id;
+  @FXML
+  private TableColumn<MonitoredEvent, UInteger> id;
 
-    @FXML
-    private TableColumn<MonitoredEvent, String> mode;
+  @FXML
+  private TableColumn<MonitoredEvent, String> mode;
 
-    @FXML
-    private TableColumn<MonitoredEvent, String> lasterror;
+  @FXML
+  private TableColumn<MonitoredEvent, String> lasterror;
 
-    @FXML
-    private TableColumn<MonitoredEvent, String> variable;
+  @FXML
+  private TableColumn<MonitoredEvent, String> variable;
 
-    @FXML
-    private TableColumn<MonitoredEvent, Double> samplingrate;
+  @FXML
+  private TableColumn<MonitoredEvent, Double> samplingrate;
 
-    @FXML
-    private TableColumn<MonitoredEvent, String> value;
+  @FXML
+  private TableColumn<MonitoredEvent, String> value;
 
-    @FXML
-    private TableColumn<MonitoredEvent, String> quality;
+  @FXML
+  private TableColumn<MonitoredEvent, String> quality;
 
-    @FXML
-    private TableColumn<MonitoredEvent, String> timestamp;
+  @FXML
+  private TableColumn<MonitoredEvent, String> timestamp;
 
-    private final static Logger logger = LoggerFactory.getLogger(EventsViewPresenter.class);
+  private final static Logger logger = LoggerFactory.getLogger(EventsViewPresenter.class);
 
-    @Override
-    public void initialize(URL url, ResourceBundle rb) {
+  @Override
+  public void initialize(URL url, ResourceBundle rb) {
 
-	id.setCellValueFactory(
-		p -> new ReadOnlyObjectWrapper<UInteger>(p.getValue().getSubscription().getSubscriptionId()));
+    id.setCellValueFactory(p -> new ReadOnlyObjectWrapper<UInteger>(
+        p.getValue().getSubscription().getSubscriptionId()));
 
-	mode.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getMonitoredItem().isPresent()
-		? p.getValue().getMonitoredItem().get().getMonitoringMode().toString() : ""));
+    mode.setCellValueFactory(
+        p -> new ReadOnlyStringWrapper(p.getValue().getMonitoredItem().isPresent()
+            ? p.getValue().getMonitoredItem().get().getMonitoringMode().toString() : ""));
 
-	variable.setCellValueFactory(p -> p.getValue().nameProperty());
+    variable.setCellValueFactory(p -> p.getValue().nameProperty());
 
-	value.setCellValueFactory(p -> p.getValue().valueProperty());
+    value.setCellValueFactory(p -> p.getValue().valueProperty());
 
-	samplingrate.setCellValueFactory(
-		p -> new ReadOnlyObjectWrapper<Double>(p.getValue().getSubscription().getRevisedPublishingInterval()));
+    samplingrate.setCellValueFactory(p -> new ReadOnlyObjectWrapper<Double>(
+        p.getValue().getSubscription().getRevisedPublishingInterval()));
 
-	quality.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getMonitoredItem().isPresent()
-		? OpcUaConverter.toString(p.getValue().getMonitoredItem().get().getStatusCode()) : ""));
+    quality.setCellValueFactory(
+        p -> new ReadOnlyStringWrapper(p.getValue().getMonitoredItem().isPresent()
+            ? OpcUaConverter.toString(p.getValue().getMonitoredItem().get().getStatusCode()) : ""));
 
-	timestamp.setCellValueFactory(p -> p.getValue().timestampProperty());
+    timestamp.setCellValueFactory(p -> p.getValue().timestampProperty());
 
-	lasterror.setCellValueFactory(p -> p.getValue().lasterrorProperty());
+    lasterror.setCellValueFactory(p -> p.getValue().lasterrorProperty());
 
-	table.setItems(monitoredItems);
+    table.setItems(monitoredItems);
 
-	table.setOnKeyPressed(e -> {
-	    if (e.getCode() == KeyCode.DELETE){
-		remove(table.getSelectionModel().getSelectedItem());
-	    }
-	});
-	
-	table.setOnDragOver(event -> {
-	    event.acceptTransferModes(TransferMode.COPY);
-	    event.consume();
-	});
+    table.setOnKeyPressed(e -> {
+      if (e.getCode() == KeyCode.DELETE) {
+        remove(table.getSelectionModel().getSelectedItem());
+      }
+    });
 
-	table.setOnDragEntered(event -> {
-	    if (event.getDragboard().hasString()) {
-		table.setBlendMode(BlendMode.DARKEN);
-	    }
-	});
-	table.setOnDragExited(event -> {
-	    if (event.getDragboard().hasString()) {
-		table.setBlendMode(null);
-	    }
-	});
-	table.setOnDragDropped(event -> {
-	    if (event.getDragboard().hasString()) {
-		table.setBlendMode(null);
-		event.acceptTransferModes(TransferMode.COPY);
-		state.subscribeTreeItemList().add(state.selectedTreeItemProperty().get());
-		event.setDropCompleted(true);
-	    }
-	});
+    table.setOnDragOver(event -> {
+      event.acceptTransferModes(TransferMode.COPY);
+      event.consume();
+    });
 
-	state.subscribeTreeItemList().addListener((ListChangeListener.Change<? extends ReferenceDescription> c) -> {
-	    while (c.next()) {
-		if (c.wasAdded()) {
-		    c.getAddedSubList().stream().forEach(this::subscribe);
-		}
-	    }
-	});
-	addContextMenu(rb);
+    table.setOnDragEntered(event -> {
+      if (event.getDragboard().hasString()) {
+        table.setBlendMode(BlendMode.DARKEN);
+      }
+    });
+    table.setOnDragExited(event -> {
+      if (event.getDragboard().hasString()) {
+        table.setBlendMode(null);
+      }
+    });
+    table.setOnDragDropped(event -> {
+      if (event.getDragboard().hasString()) {
+        table.setBlendMode(null);
+        event.acceptTransferModes(TransferMode.COPY);
+        state.subscribeTreeItemList().add(state.selectedTreeItemProperty().get());
+        event.setDropCompleted(true);
+      }
+    });
 
+    state.subscribeTreeItemList()
+        .addListener((ListChangeListener.Change<? extends ReferenceDescription> c) -> {
+          while (c.next()) {
+            if (c.wasAdded()) {
+              c.getAddedSubList().stream().forEach(this::subscribe);
+            }
+          }
+        });
+    addContextMenu(rb);
+
+  }
+
+  private void subscribe(ReferenceDescription rd) {
+    if (rd == null) {
+      return;
     }
+    state.subscribeTreeItemList().remove(rd);
+    try {
+      connection.subscribe(rd).whenCompleteAsync((s, t) -> {
+        if (t != null) {
+          logger.error(t.getMessage(), t);
+        }
+        if (s != null) {
+          monitoredItems.add(new MonitoredEvent(rd, s));
+        }
+      } , Platform::runLater);
 
-    private void subscribe(ReferenceDescription rd) {
-	if (rd == null) {
-	    return;
-	}
-	state.subscribeTreeItemList().remove(rd);
-	try {
-	    connection.subscribe(1000.0, rd).whenCompleteAsync((s, t) -> {
-		if (t != null) {
-		    logger.error(t.getMessage(), t);
-		}
-		if (s != null) {
-		    monitoredItems.add(new MonitoredEvent(rd, s));
-		}
-	    } , Platform::runLater);
-
-	} catch (Exception e) {
-	    logger.error(e.getMessage(), e);
-	}
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
     }
+  }
 
-    private void addContextMenu(ResourceBundle rb) {
+  private void addContextMenu(ResourceBundle rb) {
 
-	ContextMenu menu = new ContextMenu();
-	MenuItem removeItem = new MenuItem("Remove");
-	removeItem.setOnAction(a -> remove(table.getSelectionModel().getSelectedItem()));
-	MenuItem removeAllItem = new MenuItem("Remove All");
-	removeAllItem.setOnAction(a -> removeAll());
-	menu.getItems().addAll(removeItem, removeAllItem);
+    ContextMenu menu = new ContextMenu();
+    MenuItem removeItem = new MenuItem(rb.getString("events.remove"));
+    removeItem.setOnAction(a -> remove(table.getSelectionModel().getSelectedItem()));
+    MenuItem removeAllItem = new MenuItem(rb.getString("events.removeall"));
+    removeAllItem.setOnAction(a -> removeAll());
+    menu.getItems().addAll(removeItem, removeAllItem);
 
-	removeItem.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
-	removeAllItem.disableProperty().bind(Bindings.isEmpty(table.getItems()));
+    removeItem.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
+    removeAllItem.disableProperty().bind(Bindings.isEmpty(table.getItems()));
 
-	table.setContextMenu(menu);
+    table.setContextMenu(menu);
+  }
+
+  private void remove(MonitoredEvent item) {
+    if (item == null) {
+      return;
     }
-
-    private void remove(MonitoredEvent item) {
-	if (item == null) {
-	    return;
-	}
-	try {
-	    connection.unsubscribe(item.getSubscription().getSubscriptionId());
-	    monitoredItems.remove(item);
-	} catch (Exception e) {
-	    logger.error(e.getMessage(), e);
-	}
+    try {
+      connection.unsubscribe(item.getSubscription());
+      monitoredItems.remove(item);
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
     }
+  }
 
-    private void removeAll() {
-	try {
-	    connection.unsubscribeAll();
-	    monitoredItems.clear();
-	} catch (Exception e) {
-	    logger.error(e.getMessage(), e);
-	}
+  private void removeAll() {
+    try {
+      connection.unsubscribeAll();
+      monitoredItems.clear();
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
     }
+  }
 
 }

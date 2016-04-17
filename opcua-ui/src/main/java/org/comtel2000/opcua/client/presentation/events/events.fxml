@@ -13,21 +13,21 @@
 	fx:controller="org.comtel2000.opcua.client.presentation.events.EventsViewPresenter">
 	<columns>
 		<TableColumn fx:id="id" minWidth="50.0" prefWidth="50.0"
-			text="Subcribe ID" />
+			text="%events.column.id" />
 		<TableColumn fx:id="variable" minWidth="100.0" prefWidth="150.0"
-			text="Variable Name" />
+			text="%events.column.display" />
 		<TableColumn fx:id="mode" minWidth="70.0" prefWidth="70.0"
 			text="Mode" />
 		<TableColumn fx:id="samplingrate" minWidth="100.0"
-			prefWidth="100.0" text="Sampling Rate" />
+			prefWidth="100.0" text="%events.column.rate" />
 		<TableColumn fx:id="value" minWidth="100.0" prefWidth="200.0"
-			text="Value" />
+			text="%events.column.value" />
 		<TableColumn fx:id="quality" minWidth="70.0" prefWidth="70.0"
-			text="Quality" />
+			text="%events.column.quality" />
 		<TableColumn fx:id="timestamp" minWidth="100.0" prefWidth="150.0"
-			text="Updated" />
+			text="%events.column.updated" />
 		<TableColumn fx:id="lasterror" minWidth="100.0" prefWidth="100.0"
-			text="Last Error" />
+			text="%events.column.lasterror" />
 
 	</columns>
 	<columnResizePolicy>

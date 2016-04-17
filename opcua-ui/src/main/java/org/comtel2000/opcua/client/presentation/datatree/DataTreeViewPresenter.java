@@ -1,3 +1,16 @@
+/*******************************************************************************
+ * Copyright (c) 2016 comtel2000
+ *
+ * Licensed under the Apache License, version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at:
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ *******************************************************************************/
 package org.comtel2000.opcua.client.presentation.datatree;
 
 import java.net.URL;
@@ -7,8 +20,6 @@ import javax.inject.Inject;
 
 import org.comtel2000.opcua.client.presentation.binding.StatusBinding;
 import org.comtel2000.opcua.client.service.OpcUaClientConnector;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.digitalpetri.opcua.stack.core.types.structured.ReferenceDescription;
 
@@ -23,69 +34,70 @@ import javafx.scene.control.TreeTableView;
 
 public class DataTreeViewPresenter implements Initializable {
 
-    @Inject
-    OpcUaClientConnector connection;
+  @Inject
+  OpcUaClientConnector connection;
 
-    @Inject
-    StatusBinding state;
+  @Inject
+  StatusBinding state;
 
-    @FXML
-    private TreeTableView<ReferenceDescription> tableTree;
+  @FXML
+  private TreeTableView<ReferenceDescription> tableTree;
 
-    @FXML
-    private TreeTableColumn<ReferenceDescription, String> display;
+  @FXML
+  private TreeTableColumn<ReferenceDescription, String> display;
 
-    @FXML
-    private TreeTableColumn<ReferenceDescription, String> browse;
+  @FXML
+  private TreeTableColumn<ReferenceDescription, String> browse;
 
-    @FXML
-    private TreeTableColumn<ReferenceDescription, String> node;
+  @FXML
+  private TreeTableColumn<ReferenceDescription, String> node;
 
-    private final static Logger logger = LoggerFactory.getLogger(DataTreeViewPresenter.class);
+  @Override
+  public void initialize(URL url, ResourceBundle rb) {
 
-    @Override
-    public void initialize(URL url, ResourceBundle rb) {
+    tableTree.setRowFactory(new DataTreeNodeRowFactory<ReferenceDescription>());
 
-	tableTree.setRowFactory(new DataTreeNodeRowFactory<ReferenceDescription>());
+    display.setCellValueFactory(
+        p -> new ReadOnlyStringWrapper(p.getValue().getValue().getDisplayName().getText()));
 
-	display.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue().getDisplayName().getText()));
+    browse.setCellValueFactory(p -> new ReadOnlyStringWrapper(
+        p.getValue().getValue().getBrowseName().toParseableString()));
 
-	browse.setCellValueFactory(
-		p -> new ReadOnlyStringWrapper(p.getValue().getValue().getBrowseName().toParseableString()));
+    node.setCellValueFactory(
+        p -> new ReadOnlyStringWrapper(p.getValue().getValue().getNodeId() != null
+            ? p.getValue().getValue().getNodeId().toParseableString() : ""));
 
-	node.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue().getNodeId() != null
-		? p.getValue().getValue().getNodeId().toParseableString() : ""));
+    tableTree.rootProperty().bind(state.rootNodeProperty());
+    tableTree.getSelectionModel().selectedItemProperty().addListener((l, a, b) -> nodeChanged(b));
 
-	tableTree.rootProperty().bind(state.rootNodeProperty());
-	tableTree.getSelectionModel().selectedItemProperty().addListener((l, a, b) -> nodeChanged(b));
+    addContextMenu(rb);
 
-	addContextMenu(rb);
+  }
 
+  private void nodeChanged(TreeItem<ReferenceDescription> item) {
+    if (item != null) {
+      // check for sub node
+      item.getChildren();
     }
+    state.selectedTreeItemProperty().set(item != null ? item.getValue() : null);
+  }
 
-    private void nodeChanged(TreeItem<ReferenceDescription> item) {
-	if (item != null) {
-	    // check for sub node
-	    item.getChildren();
-	}
-	state.selectedTreeItemProperty().set(item != null ? item.getValue() : null);
-    }
+  private void addContextMenu(ResourceBundle rb) {
 
-    private void addContextMenu(ResourceBundle rb) {
+    ContextMenu menu = new ContextMenu();
+    MenuItem monitorItem = new MenuItem(rb.getString("datatree.monitor"));
+    monitorItem.setOnAction(a -> {
+      TreeItem<ReferenceDescription> item = tableTree.getSelectionModel().getSelectedItem();
+      if (item != null) {
+        state.subscribeTreeItemList().add(item.getValue());
+      }
+    });
+    menu.getItems().addAll(monitorItem);
 
-	ContextMenu menu = new ContextMenu();
-	MenuItem monitorItem = new MenuItem("Monitor");
-	monitorItem.setOnAction(a -> {
-	    TreeItem<ReferenceDescription> item = tableTree.getSelectionModel().getSelectedItem();
-	    if (item != null) {
-		state.subscribeTreeItemList().add(item.getValue());
-	    }
-	});
-	menu.getItems().addAll(monitorItem);
+    monitorItem.disableProperty()
+        .bind(tableTree.getSelectionModel().selectedItemProperty().isNull());
 
-	monitorItem.disableProperty().bind(tableTree.getSelectionModel().selectedItemProperty().isNull());
-
-	tableTree.setContextMenu(menu);
-    }
+    tableTree.setContextMenu(menu);
+  }
 
 }

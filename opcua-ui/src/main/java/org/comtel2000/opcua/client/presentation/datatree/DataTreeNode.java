@@ -1,3 +1,16 @@
+/*******************************************************************************
+ * Copyright (c) 2016 comtel2000
+ *
+ * Licensed under the Apache License, version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at:
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ *******************************************************************************/
 package org.comtel2000.opcua.client.presentation.datatree;
 
 import java.util.Arrays;
@@ -25,75 +38,80 @@ import javafx.scene.shape.Rectangle;
 
 public class DataTreeNode extends TreeItem<ReferenceDescription> {
 
-    protected final static Logger logger = LoggerFactory.getLogger(DataTreeNode.class);
+  protected final static Logger logger = LoggerFactory.getLogger(DataTreeNode.class);
 
-    final AtomicBoolean updated = new AtomicBoolean(false);
-    final AtomicBoolean leaf = new AtomicBoolean(false);
+  final AtomicBoolean updated = new AtomicBoolean(false);
+  final AtomicBoolean leaf = new AtomicBoolean(false);
 
-    final OpcUaClientConnector connection;
+  final OpcUaClientConnector connection;
 
-    private final static java.util.function.Predicate<? super ReferenceDescription> hasNotifierFilter = (r) -> {
-	return r != null && !Identifiers.HasNotifier.equals(r.getReferenceTypeId());
-    };
+  private final static java.util.function.Predicate<? super ReferenceDescription> hasNotifierFilter =
+      (r) -> {
+        return r != null && !Identifiers.HasNotifier.equals(r.getReferenceTypeId());
+      };
 
-    public DataTreeNode(OpcUaClientConnector c, ReferenceDescription rd) {
-	super(rd, createGraphic(rd));
-	this.connection = c;
+  public DataTreeNode(OpcUaClientConnector c, ReferenceDescription rd) {
+    super(rd, createGraphic(rd));
+    this.connection = c;
+  }
+
+  private static Node createGraphic(ReferenceDescription rd) {
+    Rectangle rect = new Rectangle(4, 4, 8, 8);
+    rect.getStyleClass().add("tree-icon-" + rd.getNodeClass().toString().toLowerCase());
+    Pane pane = new Pane(rect);
+    pane.getStyleClass().add("tree-icon-pane");
+    return pane;
+  }
+
+  @Override
+  public boolean isLeaf() {
+    return leaf.get();
+  }
+
+  @Override
+  public ObservableList<TreeItem<ReferenceDescription>> getChildren() {
+    if (updated.getAndSet(true)) {
+      return super.getChildren();
     }
 
-    private static Node createGraphic(ReferenceDescription rd) {
-	Rectangle rect = new Rectangle(4, 4, 8, 8);
-	rect.getStyleClass().add("tree-icon-" + rd.getNodeClass().toString().toLowerCase());
-	Pane pane = new Pane(rect);
-	pane.getStyleClass().add("tree-icon-pane");
-	return pane;
+    CompletableFuture<BrowseResult> result =
+        connection.getHierarchicalReferences(getValue().getNodeId());
+    result
+        .thenApply(r -> Arrays.stream(r.getReferences()).filter(hasNotifierFilter)
+            .map(this::createNode).collect(Collectors.toList()))
+        .whenCompleteAsync(this::updateChildren, Platform::runLater);
+    return FXCollections.emptyObservableList();
+  }
+
+  private void updateChildren(List<DataTreeNode> list, Throwable t) {
+    if (t != null) {
+      logger.error(t.getMessage(), t);
+      updated.set(false);
+      return;
+    }
+    if (!super.getChildren().isEmpty()) {
+      logger.error("double update detected: {}", list);
+      return;
+    }
+    leaf.set(list.isEmpty());
+    if (!super.getChildren().addAll(list)) {
+      fireEvent(new TreeModificationEvent<ReferenceDescription>(valueChangedEvent(),
+          DataTreeNode.this, getValue()));
     }
 
-    @Override
-    public boolean isLeaf() {
-	return leaf.get();
-    }
+  }
 
-    @Override
-    public ObservableList<TreeItem<ReferenceDescription>> getChildren() {
-	if (updated.getAndSet(true)) {
-	    return super.getChildren();
-	}
+  private DataTreeNode createNode(ReferenceDescription ref) {
+    return new DataTreeNode(connection, ref);
+  }
 
-	CompletableFuture<BrowseResult> result = connection.getHierarchicalReferences(getValue().getNodeId());
-	result.thenApply(r -> Arrays.stream(r.getReferences()).filter(hasNotifierFilter).map(this::createNode)
-		.collect(Collectors.toList())).whenCompleteAsync(this::updateChildren, Platform::runLater);
-	return FXCollections.emptyObservableList();
-    }
+  private void fireEvent(TreeModificationEvent<ReferenceDescription> evt) {
+    Event.fireEvent(this, evt);
+  }
 
-    private void updateChildren(List<DataTreeNode> list, Throwable t) {
-	if (t != null) {
-	    logger.error(t.getMessage(), t);
-	    updated.set(false);
-	    return;
-	}
-	if (!super.getChildren().isEmpty()) {
-	    logger.error("double update detected: {}", list);
-	    return;
-	}
-	leaf.set(list.isEmpty());
-	if (!super.getChildren().addAll(list)) {
-	    fireEvent(new TreeModificationEvent<ReferenceDescription>(valueChangedEvent(), DataTreeNode.this,
-		    getValue()));
-	}
-
-    }
-
-    private DataTreeNode createNode(ReferenceDescription ref) {
-	return new DataTreeNode(connection, ref);
-    }
-
-    private void fireEvent(TreeModificationEvent<ReferenceDescription> evt) {
-	Event.fireEvent(this, evt);
-    }
-
-    @Override
-    public String toString() {
-	return "DataTreeNode [updated=" + updated + ", leaf=" + leaf + ", children=" + super.getChildren().size() + "]";
-    }
+  @Override
+  public String toString() {
+    return "DataTreeNode [updated=" + updated + ", leaf=" + leaf + ", children="
+        + super.getChildren().size() + "]";
+  }
 }
