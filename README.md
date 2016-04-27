@@ -20,6 +20,3 @@ java -jar opcua-ui/target/opc-ua-client-jar-with-dependencies.jar
 
 ## License
 [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
-
-## Third-party Library License
-[ua-client-sdk](https://github.com/digitalpetri/ua-client-sdk) (AGPL v3)

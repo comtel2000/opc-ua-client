@@ -42,7 +42,7 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<junit.version>4.12</junit.version>
 		<slf4j.version>1.7.18</slf4j.version>
-		<opcua.version>1.1.0</opcua.version>
+		<opcua.version>1.1.1</opcua.version>
 	</properties>
 	<profiles>
 		<profile>
