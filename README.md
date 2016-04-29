@@ -13,6 +13,17 @@ What is required:
 mvn clean install
 java -jar opcua-ui/target/opc-ua-client-jar-with-dependencies.jar
 ```
+## OPC-UA Simulation Server
+
+|                        Endpoint URL                          |         Link               |
+| ------------------------------------------------------------ | -------------------------- |
+| opc.tcp://opcua.demo-this.com:51210/UA/SampleServer          | http://opclabs.com         |
+| opc.tcp://opcuaserver.com:4841/freeopcua/server              | http://opcuaserver.com     |
+| opc.tcp://opcuaserver.com:26543                              | http://opcuaserver.com     |
+| opc.tcp://opcuaserver.com:48010                              | http://opcuaserver.com     |
+| opc.tcp://opcuaserver.com:51210/UA/SampleServer              | http://opcuaserver.com     |
+| opc.tcp://uademo.prosysopc.com:53530/OPCUA/SimulationServer  | http://prosysopc.com       |
+
 
 ## Links
 - [ua-client-sdk](https://github.com/digitalpetri/ua-client-sdk)

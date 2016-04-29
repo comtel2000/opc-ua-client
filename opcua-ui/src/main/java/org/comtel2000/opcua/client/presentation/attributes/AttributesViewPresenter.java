@@ -1,21 +1,20 @@
 /*******************************************************************************
  * Copyright (c) 2016 comtel2000
  *
- * Licensed under the Apache License, version 2.0 (the "License"); 
- * you may not use this file except in compliance with the License. 
- * You may obtain a copy of the License at:
+ * Licensed under the Apache License, version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at:
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  *******************************************************************************/
 package org.comtel2000.opcua.client.presentation.attributes;
 
 import java.net.URL;
+import java.util.EnumSet;
 import java.util.ResourceBundle;
 
 import javax.inject.Inject;
@@ -23,12 +22,14 @@ import javax.inject.Inject;
 import org.comtel2000.opcua.client.presentation.binding.StatusBinding;
 import org.comtel2000.opcua.client.service.OpcUaClientConnector;
 import org.comtel2000.opcua.client.service.OpcUaConverter;
+import org.comtel2000.opcua.client.service.OpcUaConverter.AccessLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.digitalpetri.opcua.stack.core.AttributeId;
 import com.digitalpetri.opcua.stack.core.types.builtin.DataValue;
 import com.digitalpetri.opcua.stack.core.types.builtin.Variant;
+import com.digitalpetri.opcua.stack.core.types.builtin.unsigned.UByte;
 import com.digitalpetri.opcua.stack.core.types.builtin.unsigned.UInteger;
 import com.digitalpetri.opcua.stack.core.types.enumerated.NodeClass;
 import com.digitalpetri.opcua.stack.core.types.structured.ReferenceDescription;
@@ -41,7 +42,6 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableColumn.CellEditEvent;
 import javafx.scene.control.TableView;
 
 public class AttributesViewPresenter implements Initializable {
@@ -74,7 +74,7 @@ public class AttributesViewPresenter implements Initializable {
     value.setCellValueFactory(param -> param.getValue().valueProperty());
     value.setCellFactory(new AttributeItemCellFactory());
 
-    value.setOnEditCommit((CellEditEvent<AttributeItem, String> event) -> {
+    value.setOnEditCommit(event -> {
       try {
         event.consume();
         final ReferenceDescription rd = selectedReference.get();
@@ -82,10 +82,11 @@ public class AttributesViewPresenter implements Initializable {
         if (dv == null || rd == null) {
           return;
         }
+
         Variant v = new Variant(OpcUaConverter
             .toWritableDataTypeObject(dv.getValue().getDataType().get(), event.getNewValue()));
         WriteValue wv = new WriteValue(rd.getNodeId().local().get(), AttributeId.Value.uid(), null,
-            new DataValue(v));
+            new DataValue(v, dv.getStatusCode(), dv.getSourceTime(), dv.getServerTime()));
         connection.write(wv).whenCompleteAsync((s, t) -> {
           if (t != null) {
             logger.error(t.getMessage(), t);
@@ -96,7 +97,7 @@ public class AttributesViewPresenter implements Initializable {
           state.statusTextProperty().set(String.format("write to %s %s", rd.getBrowseName(),
               (s.isGood() ? "succeed" : "failed: " + s)));
           updateAttributes(rd);
-        } , Platform::runLater);
+        }, Platform::runLater);
       } catch (Exception e) {
         logger.error(e.getMessage(), e);
       }
@@ -124,25 +125,58 @@ public class AttributesViewPresenter implements Initializable {
         .add(AttributeItem.get("TypeDefinition", b.getTypeDefinition().toParseableString()));
 
     if (b.getNodeId().isLocal() && b.getNodeClass() == NodeClass.Variable) {
-      connection.readValues(Lists.newArrayList(b.getNodeId().local().get()))
+      connection
+          .read(b.getNodeId().local().get(),
+              Lists.newArrayList(AttributeId.Description.uid(), AttributeId.AccessLevel.uid(),
+                  AttributeId.UserAccessLevel.uid(), AttributeId.Value.uid()))
           .whenComplete((d, t) -> {
             if (t != null) {
               logger.error(t.getMessage(), t);
               return;
             }
-            if (!d.isEmpty()) {
-              DataValue value = d.get(0);
+            if (d.size() > 3) {
+              DataValue descr = d.get(0);
+              table.getItems()
+                  .add(AttributeItem.get("Description", OpcUaConverter.toString(descr.getValue())));
+
+              DataValue accessLevel = d.get(1);
+              EnumSet<AccessLevel> level =
+                  OpcUaConverter.AccessLevel.fromMask((UByte) accessLevel.getValue().getValue());
+              table.getItems()
+                  .add(AttributeItem.get("AccessLevel", OpcUaConverter.toString(level)));
+              DataValue userAccessLevel = d.get(2);
+              EnumSet<AccessLevel> userLevel = OpcUaConverter.AccessLevel
+                  .fromMask((UByte) userAccessLevel.getValue().getValue());
+              table.getItems()
+                  .add(AttributeItem.get("UserAccessLevel", OpcUaConverter.toString(userLevel)));
+
+              DataValue value = d.get(3);
               selectedDataValue.set(value);
-              table.getItems().add(AttributeItem.get("Value",
-                  OpcUaConverter.toString(value.getValue()), isSupported(value)));
+              table.getItems()
+                  .add(AttributeItem.get("Value", OpcUaConverter.toString(value.getValue()),
+                      level.contains(AccessLevel.CurrentWrite) && isSupported(value)));
               if (value.getValue().getDataType().isPresent()) {
-                table.getItems().add(AttributeItem.get("DataType",
+                table.getItems().add(AttributeItem.get("Value (DataType)",
                     OpcUaConverter.toDataTypeString(value.getValue().getDataType().get())));
               }
-              table.getItems().add(
-                  AttributeItem.get("ServerTime", OpcUaConverter.toString(value.getServerTime())));
-              table.getItems().add(
-                  AttributeItem.get("StatusCode", OpcUaConverter.toString(value.getStatusCode())));
+              if (value.getSourceTime() != null) {
+                table.getItems().add(AttributeItem.get("Value (SourceTime)",
+                    OpcUaConverter.toString(value.getSourceTime())));
+              }
+              if (value.getSourcePicoseconds() != null) {
+                table.getItems().add(AttributeItem.get("Value (SourcePicoseconds)",
+                    value.getSourcePicoseconds().toString()));
+              }
+              if (value.getServerTime() != null) {
+                table.getItems().add(AttributeItem.get("Value (ServerTime)",
+                    OpcUaConverter.toString(value.getServerTime())));
+              }
+              if (value.getServerPicoseconds() != null) {
+                table.getItems().add(AttributeItem.get("Value (ServerPicoseconds)",
+                    value.getServerPicoseconds().toString()));
+              }
+              table.getItems()
+              .add(AttributeItem.get("Value (StatusCode)", OpcUaConverter.toString(value.getStatusCode())));
             }
           });
     }

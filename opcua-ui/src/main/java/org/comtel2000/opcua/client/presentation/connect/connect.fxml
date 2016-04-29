@@ -1,23 +1,48 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import javafx.geometry.*?>
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.input.KeyCodeCombination?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.Region?>
 
-<HBox spacing="10.0" styleClass="tool-bar" xmlns="http://javafx.com/javafx/8"
-	xmlns:fx="http://javafx.com/fxml/1"
-	fx:controller="org.comtel2000.opcua.client.presentation.connect.ConnectViewPresenter">
+<HBox spacing="10.0" styleClass="tool-bar" xmlns="http://javafx.com/javafx/8.0.60" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.comtel2000.opcua.client.presentation.connect.ConnectViewPresenter">
 	<children>
-		<ComboBox fx:id="address" editable="true" maxWidth="1.7976931348623157E308"
-			minWidth="100.0" prefWidth="400.0" HBox.hgrow="SOMETIMES" />
+      <MenuButton fx:id="menu" maxHeight="-Infinity" maxWidth="-Infinity" mnemonicParsing="false" prefHeight="25.0" prefWidth="25.0">
+        <items>
+          <MenuItem fx:id="connectItem" mnemonicParsing="false" onAction="#connect" text="%connect.connect">
+               <accelerator>
+                  <KeyCodeCombination alt="UP" code="C" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+               </accelerator>
+            </MenuItem>
+          <MenuItem fx:id="disconnectItem" mnemonicParsing="false" onAction="#disconnect" text="%connect.disconnect">
+               <accelerator>
+                  <KeyCodeCombination alt="UP" code="D" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+               </accelerator>
+            </MenuItem>
+            <MenuItem fx:id="aboutItem" mnemonicParsing="false" onAction="#about" text="%connect.about">
+               <accelerator>
+                  <KeyCodeCombination alt="UP" code="A" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+               </accelerator>
+            </MenuItem>
+            <MenuItem fx:id="closeItem" mnemonicParsing="false" onAction="#exit" text="%connect.exit">
+               <accelerator>
+                  <KeyCodeCombination alt="UP" code="Q" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+               </accelerator>
+            </MenuItem>
+        </items>
+         <graphic>
+            <Pane maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="12.0" prefWidth="14.0" />
+         </graphic>
+      </MenuButton>
+		<ComboBox fx:id="address" editable="true" maxWidth="1.7976931348623157E308" minWidth="100.0" prefWidth="400.0" HBox.hgrow="SOMETIMES" />
 		<Region minWidth="0.0" prefWidth="10.0" HBox.hgrow="SOMETIMES" />
-		<Button id="" fx:id="connectButton" minWidth="80.0"
-			mnemonicParsing="false" onAction="#connect" text="%connect.connect" />
-		<Button id="" fx:id="disconnectButton" contentDisplay="LEFT"
-			minWidth="80.0" mnemonicParsing="false" onAction="#disconnect"
-			text="%connect.disconnect" textAlignment="LEFT" />
+		<Button id="" fx:id="connectButton" minWidth="80.0" mnemonicParsing="false" onAction="#connect" text="%connect.connect" />
+		<Button id="" fx:id="disconnectButton" contentDisplay="LEFT" minWidth="80.0" mnemonicParsing="false" onAction="#disconnect" text="%connect.disconnect" textAlignment="LEFT" />
 	</children>
 	<padding>
 		<Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />

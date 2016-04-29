@@ -39,10 +39,10 @@ public class OpcUAClient extends Application {
   @Override
   public void start(Stage stage) throws Exception {
 
-    stage.setTitle("OPC-UA Client.FX (" + System.getProperty("javafx.runtime.version") + ")");
+    stage.setTitle("OPC-UA client.fx (" + System.getProperty("javafx.runtime.version") + ")");
     stage.setResizable(true);
 
-    Injector.setLogger((t) -> logger.trace(t));
+    Injector.setLogger(logger::trace);
 
     PersistenceService session = Injector.instantiateModelOrService(PersistenceService.class);
 

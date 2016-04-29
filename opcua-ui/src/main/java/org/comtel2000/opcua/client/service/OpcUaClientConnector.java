@@ -297,6 +297,16 @@ public class OpcUaClientConnector implements SessionActivityListener {
         Collections.singletonList(attr.uid()));
   }
 
+  public CompletableFuture<List<DataValue>> read(NodeId node, List<UInteger> attr) {
+    if (client.get() == null) {
+      return buildCompleteExceptionally(new CompletableFuture<List<DataValue>>(),
+          new IOException("not connected"));
+    }
+    List<NodeId> nodes = Lists.newArrayList();
+    attr.forEach(a -> nodes.add(node));
+    return client.get().read(0.0, TimestampsToReturn.Both, nodes, attr);
+  }
+  
   public CompletableFuture<List<DataValue>> readValues(List<NodeId> nodeIds) {
     if (client.get() == null) {
       return buildCompleteExceptionally(new CompletableFuture<List<DataValue>>(),

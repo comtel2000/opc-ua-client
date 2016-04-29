@@ -1,17 +1,15 @@
 /*******************************************************************************
  * Copyright (c) 2016 comtel2000
  *
- * Licensed under the Apache License, version 2.0 (the "License"); 
- * you may not use this file except in compliance with the License. 
- * You may obtain a copy of the License at:
+ * Licensed under the Apache License, version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at:
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  *******************************************************************************/
 package org.comtel2000.opcua.client.service;
 
@@ -21,7 +19,9 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import com.digitalpetri.opcua.stack.core.types.builtin.ByteString;
 import com.digitalpetri.opcua.stack.core.types.builtin.DateTime;
@@ -31,10 +31,43 @@ import com.digitalpetri.opcua.stack.core.types.builtin.NodeId;
 import com.digitalpetri.opcua.stack.core.types.builtin.StatusCode;
 import com.digitalpetri.opcua.stack.core.types.builtin.Variant;
 import com.digitalpetri.opcua.stack.core.types.builtin.XmlElement;
+import com.digitalpetri.opcua.stack.core.types.builtin.unsigned.UByte;
 import com.digitalpetri.opcua.stack.core.types.builtin.unsigned.UInteger;
 import com.digitalpetri.opcua.stack.core.types.builtin.unsigned.Unsigned;
 
 public class OpcUaConverter {
+
+  public enum AccessLevel {
+
+    CurrentRead(0x01),
+
+    CurrentWrite(0x02),
+
+    HistoryRead(0x04),
+
+    HistoryWrite(0x08),
+
+    SemanticChange(0x10);
+
+    private final int value;
+
+    AccessLevel(int value) {
+      this.value = value;
+    }
+
+    public int getValue() {
+      return value;
+    }
+
+    public static EnumSet<AccessLevel> fromMask(int accessLevel) {
+      return Arrays.stream(values()).filter(al -> (al.value & accessLevel) != 0)
+          .collect(Collectors.toCollection(() -> EnumSet.noneOf(AccessLevel.class)));
+    }
+
+    public static EnumSet<AccessLevel> fromMask(UByte accessLevel) {
+      return fromMask(accessLevel.intValue());
+    }
+  }
 
   private OpcUaConverter() {}
 
@@ -178,7 +211,7 @@ public class OpcUaConverter {
   }
 
   public static String toString(DateTime time) {
-    return DateTimeFormatter.ISO_DATE_TIME.format(toZonedDateTime(time));
+    return DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(toZonedDateTime(time));
   }
 
   public static String toString(ByteString bs) {
@@ -210,5 +243,12 @@ public class OpcUaConverter {
       return "uncertain";
     }
     return "unknown";
+  }
+
+  public static String toString(EnumSet<AccessLevel> al) {
+    if (al == null || al.isEmpty()) {
+      return null;
+    }
+    return al.stream().map(i -> i.toString()).collect(Collectors.joining(", "));
   }
 }

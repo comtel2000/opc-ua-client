@@ -1,3 +1,12 @@
+.button, .menu-button, .toggle-button, .combo-box, .choice-box {
+	/* buttons do not have rounded corners */
+	-fx-background-radius: 0.0, 0.0, 0.0, 0.0;
+}
+
+.menu-button:hover, .menu-button:focus , .toggle-button:hover, .toggle-button:focus  {
+	-fx-background-color: -fx-outer-border, -fx-inner-border, -fx-body-color;
+}
+
 .label {
-	-fx-text-fill: #505050;
+	-fx-text-fill: #333;
 }

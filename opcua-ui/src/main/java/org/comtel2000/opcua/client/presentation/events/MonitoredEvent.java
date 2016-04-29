@@ -15,7 +15,6 @@
  *******************************************************************************/
 package org.comtel2000.opcua.client.presentation.events;
 
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.Optional;
@@ -52,7 +51,7 @@ public class MonitoredEvent implements Consumer<DataValue> {
 
   @Override
   public void accept(DataValue v) {
-    timestampProperty().set(DateTimeFormatter.ISO_LOCAL_TIME.format(LocalTime.now()));
+    timestampProperty().set(DateTimeFormatter.ISO_LOCAL_TIME.format(OpcUaConverter.toZonedDateTime(v.getSourceTime())));
     valueProperty().set(OpcUaConverter.toString(v.getValue()));
     if (v.getStatusCode() != StatusCode.GOOD) {
       lasterrorProperty().set(v.getStatusCode().toString());

@@ -1,21 +1,20 @@
 /*******************************************************************************
  * Copyright (c) 2016 comtel2000
  *
- * Licensed under the Apache License, version 2.0 (the "License"); 
- * you may not use this file except in compliance with the License. 
- * You may obtain a copy of the License at:
+ * Licensed under the Apache License, version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at:
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  *******************************************************************************/
 package org.comtel2000.opcua.client.presentation.connect;
 
 import java.net.URL;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -34,8 +33,12 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
 import javafx.scene.input.KeyCode;
 
 public class ConnectViewPresenter implements Initializable {
@@ -53,6 +56,21 @@ public class ConnectViewPresenter implements Initializable {
   String urls;
 
   @FXML
+  MenuButton menu;
+
+  @FXML
+  private MenuItem connectItem;
+
+  @FXML
+  private MenuItem disconnectItem;
+
+  @FXML
+  private MenuItem aboutItem;
+
+  @FXML
+  private MenuItem closeItem;
+
+  @FXML
   ComboBox<String> address;
 
   @FXML
@@ -60,6 +78,8 @@ public class ConnectViewPresenter implements Initializable {
 
   @FXML
   Button disconnectButton;
+
+  private ResourceBundle resource;
 
   protected static Executor FX_PLATFORM_EXECUTOR = Platform::runLater;
 
@@ -69,8 +89,7 @@ public class ConnectViewPresenter implements Initializable {
 
   @Override
   public void initialize(URL url, ResourceBundle rb) {
-
-
+    resource = rb;
     session.bind(address.getItems(), "addressHistory");
     session.bind(addressUrl);
 
@@ -95,6 +114,9 @@ public class ConnectViewPresenter implements Initializable {
     disconnectButton.disableProperty()
         .bind(state.connectedProperty().not().or(state.progressVisibleProperty()));
 
+    connectItem.disableProperty().bind(connectButton.disabledProperty());
+    disconnectItem.disableProperty().bind(disconnectButton.disabledProperty());
+
     connection
         .onConnectionChanged((b, t) -> Platform.runLater(() -> state.connectedProperty().set(b)));
 
@@ -116,7 +138,7 @@ public class ConnectViewPresenter implements Initializable {
           readHierarchy();
           updateAddressHistory();
         }
-      } , FX_PLATFORM_EXECUTOR);
+      }, FX_PLATFORM_EXECUTOR);
     });
   }
 
@@ -128,6 +150,27 @@ public class ConnectViewPresenter implements Initializable {
           FX_PLATFORM_EXECUTOR);
     });
   }
+
+  @FXML
+  public void about() {
+    Alert info = new Alert(AlertType.INFORMATION);
+    info.setTitle(resource.getString("connect.about"));
+    Optional<String> version =
+        Optional.ofNullable(ConnectViewPresenter.class.getPackage().getImplementationVersion());
+    info.setHeaderText(String.format(resource.getString("about.header"), version.orElse("DEV")));
+    info.setContentText(
+        String.format(resource.getString("about.text"), System.getProperty("java.runtime.version"),
+            System.getProperty("java.vendor"), System.getProperty("os.name"),
+            System.getProperty("os.arch"), System.getProperty("os.version")));
+    info.show();
+  }
+
+  @FXML
+  public void exit() {
+    disconnect();
+    System.exit(0);
+  }
+
 
   private void updateAddressHistory() {
     String adr = addressUrl.get();

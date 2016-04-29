@@ -1,17 +1,15 @@
 /*******************************************************************************
  * Copyright (c) 2016 comtel2000
  *
- * Licensed under the Apache License, version 2.0 (the "License"); 
- * you may not use this file except in compliance with the License. 
- * You may obtain a copy of the License at:
+ * Licensed under the Apache License, version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at:
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  *******************************************************************************/
 package org.comtel2000.opcua.client.presentation.datatree;
 
@@ -23,7 +21,6 @@ import com.digitalpetri.opcua.stack.core.types.structured.ReferenceDescription;
 import javafx.scene.Node;
 import javafx.scene.control.TreeTableCell;
 import javafx.scene.control.TreeTableColumn;
-import javafx.scene.layout.Pane;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Callback;
 
@@ -54,11 +51,6 @@ public class DataTreeNodeCellFactory implements
   private Node createGraphicNode(ReferenceDescription rd) {
     Rectangle rect = new Rectangle(4, 4, 8, 8);
     rect.getStyleClass().add("tree-icon-" + rd.getNodeClass().toString().toLowerCase());
-    Pane pane = new Pane(rect);
-    pane.getStyleClass().add("tree-icon-pane");
-    pane.setCache(true);
-    return pane;
-
-
+    return rect;
   }
 }

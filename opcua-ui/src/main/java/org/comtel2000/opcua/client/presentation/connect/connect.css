@@ -1,0 +1,18 @@
+.menu-button {
+	-fx-background-color: transparent;
+}
+
+.menu-button:hover, .menu-button:focus  {
+	-fx-background-color: -fx-outer-border, -fx-inner-border, -fx-body-color;
+}
+.menu-button:armed, .menu-button:showing {
+	-fx-background-color: -fx-focus-color, #BBB, #DDD, -fx-faint-focus-color, #DDD;
+}
+
+.menu-button > .arrow-button .arrow {
+	-fx-shape: "m 0,-10 c -2,0 -2,5 0,5 1,0 35,0 36,0 2,0 2,-5 0,-5 -1,0 -35,0 -36,0 z m 0,-10 c -2,0 -2,5 0,5 1,0 35,0 36,0 2,0 2,-5 0,-5 -1,0 -35,0 -36,0 z m 0,-10 c -2,0 -2,5 0,5 1,0 35,0 36,0 2,0 2,-5 0,-5 -1,0 -35,0 -36,0 z";
+	-fx-background-color: #666;
+	-fx-padding: 3.0;
+	-fx-pref-width: 14.0;
+	-fx-pref-height: 14.0;
+}
