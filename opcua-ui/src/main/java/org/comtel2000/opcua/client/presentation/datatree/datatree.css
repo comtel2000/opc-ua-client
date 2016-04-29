@@ -9,6 +9,11 @@
 	-fx-fill: red;
 }
 
+.tree-table-view .tree-icon-pane {
+	-fx-min-width: 16px;
+    -fx-min-height: 16px;
+}
+
 .tree-table-view .tree-icon-unspecified {
 	-fx-fill: white;
 	-fx-stroke: black;

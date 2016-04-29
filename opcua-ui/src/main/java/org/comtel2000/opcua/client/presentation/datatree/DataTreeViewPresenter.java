@@ -1,15 +1,17 @@
 /*******************************************************************************
  * Copyright (c) 2016 comtel2000
  *
- * Licensed under the Apache License, version 2.0 (the "License"); you may not use this file except
- * in compliance with the License. You may obtain a copy of the License at:
+ * Licensed under the Apache License, version 2.0 (the "License"); 
+ * you may not use this file except in compliance with the License. 
+ * You may obtain a copy of the License at:
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software distributed under the License
- * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
- * or implied. See the License for the specific language governing permissions and limitations under
- * the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
  *******************************************************************************/
 package org.comtel2000.opcua.client.presentation.datatree;
 
@@ -23,6 +25,7 @@ import org.comtel2000.opcua.client.service.OpcUaClientConnector;
 
 import com.digitalpetri.opcua.stack.core.types.structured.ReferenceDescription;
 
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -44,7 +47,7 @@ public class DataTreeViewPresenter implements Initializable {
   private TreeTableView<ReferenceDescription> tableTree;
 
   @FXML
-  private TreeTableColumn<ReferenceDescription, String> display;
+  private TreeTableColumn<ReferenceDescription, ReferenceDescription> display;
 
   @FXML
   private TreeTableColumn<ReferenceDescription, String> browse;
@@ -58,7 +61,10 @@ public class DataTreeViewPresenter implements Initializable {
     tableTree.setRowFactory(new DataTreeNodeRowFactory<ReferenceDescription>());
 
     display.setCellValueFactory(
-        p -> new ReadOnlyStringWrapper(p.getValue().getValue().getDisplayName().getText()));
+        p -> new ReadOnlyObjectWrapper<ReferenceDescription>(p.getValue().getValue()));
+
+    
+    display.setCellFactory( new DataTreeNodeCellFactory());
 
     browse.setCellValueFactory(p -> new ReadOnlyStringWrapper(
         p.getValue().getValue().getBrowseName().toParseableString()));
