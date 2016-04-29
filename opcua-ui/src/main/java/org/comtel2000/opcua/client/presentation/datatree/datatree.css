@@ -15,8 +15,8 @@
 }
 
 .tree-table-view .tree-icon-unspecified {
-	-fx-fill: white;
-	-fx-stroke: black;
+	-fx-fill: transparent;
+	-fx-stroke: -fx-text-base-color;
 	-fx-stroke-width: 2.0;
 }
 
