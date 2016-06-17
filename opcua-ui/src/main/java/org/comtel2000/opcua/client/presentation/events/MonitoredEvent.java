@@ -22,11 +22,11 @@ import java.util.function.Consumer;
 
 import org.comtel2000.opcua.client.service.OpcUaConverter;
 
-import com.digitalpetri.opcua.sdk.client.api.subscriptions.UaMonitoredItem;
-import com.digitalpetri.opcua.sdk.client.api.subscriptions.UaSubscription;
-import com.digitalpetri.opcua.stack.core.types.builtin.DataValue;
-import com.digitalpetri.opcua.stack.core.types.builtin.StatusCode;
-import com.digitalpetri.opcua.stack.core.types.structured.ReferenceDescription;
+import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaMonitoredItem;
+import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaSubscription;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;

@@ -16,7 +16,7 @@ package org.comtel2000.opcua.client.presentation.datatree;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpetri.opcua.stack.core.types.structured.ReferenceDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 
 import javafx.scene.Node;
 import javafx.scene.control.TreeTableCell;

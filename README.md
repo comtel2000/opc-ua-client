@@ -3,7 +3,7 @@
 
 ![screenshot] (doc/opcua_client.png)
 
-## How to build and run sample
+## How to build and run
 What is required:
 
 * Latest stable [Oracle JDK 8](http://www.oracle.com/technetwork/java)
@@ -26,7 +26,7 @@ java -jar opcua-ui/target/opc-ua-client-jar-with-dependencies.jar
 
 
 ## Links
-- [ua-client-sdk](https://github.com/digitalpetri/ua-client-sdk)
+- [Eclipse Milo](https://github.com/eclipse/milo)
 - [afterburner.fx](https://github.com/AdamBien/afterburner.fx)
 
 ## License

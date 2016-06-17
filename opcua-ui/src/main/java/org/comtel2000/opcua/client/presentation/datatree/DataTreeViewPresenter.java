@@ -23,7 +23,7 @@ import javax.inject.Inject;
 import org.comtel2000.opcua.client.presentation.binding.StatusBinding;
 import org.comtel2000.opcua.client.service.OpcUaClientConnector;
 
-import com.digitalpetri.opcua.stack.core.types.structured.ReferenceDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;

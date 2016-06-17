@@ -16,9 +16,9 @@
 	</properties>
 	<dependencies>
 		<dependency>
-			<groupId>com.digitalpetri.opcua</groupId>
-			<artifactId>ua-client</artifactId>
-			<version>${opcua.version}</version>
+			<groupId>org.eclipse.milo</groupId>
+			<artifactId>sdk-client</artifactId>
+			<version>${milo.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>

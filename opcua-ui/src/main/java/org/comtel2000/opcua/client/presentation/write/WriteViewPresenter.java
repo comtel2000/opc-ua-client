@@ -26,9 +26,9 @@ import org.comtel2000.opcua.client.service.PersistenceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpetri.opcua.stack.core.types.builtin.DataValue;
-import com.digitalpetri.opcua.stack.core.types.builtin.Variant;
-import com.digitalpetri.opcua.stack.core.types.structured.ReferenceDescription;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;

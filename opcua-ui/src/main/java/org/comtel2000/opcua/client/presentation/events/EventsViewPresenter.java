@@ -26,8 +26,8 @@ import org.comtel2000.opcua.client.service.OpcUaConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpetri.opcua.stack.core.types.builtin.unsigned.UInteger;
-import com.digitalpetri.opcua.stack.core.types.structured.ReferenceDescription;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;

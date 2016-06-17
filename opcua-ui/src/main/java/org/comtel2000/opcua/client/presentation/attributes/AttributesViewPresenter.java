@@ -26,14 +26,14 @@ import org.comtel2000.opcua.client.service.OpcUaConverter.AccessLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpetri.opcua.stack.core.AttributeId;
-import com.digitalpetri.opcua.stack.core.types.builtin.DataValue;
-import com.digitalpetri.opcua.stack.core.types.builtin.Variant;
-import com.digitalpetri.opcua.stack.core.types.builtin.unsigned.UByte;
-import com.digitalpetri.opcua.stack.core.types.builtin.unsigned.UInteger;
-import com.digitalpetri.opcua.stack.core.types.enumerated.NodeClass;
-import com.digitalpetri.opcua.stack.core.types.structured.ReferenceDescription;
-import com.digitalpetri.opcua.stack.core.types.structured.WriteValue;
+import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.WriteValue;
 import com.google.common.collect.Lists;
 
 import javafx.application.Platform;

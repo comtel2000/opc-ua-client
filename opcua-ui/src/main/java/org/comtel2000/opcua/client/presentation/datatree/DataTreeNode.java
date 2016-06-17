@@ -25,9 +25,9 @@ import org.comtel2000.opcua.client.service.OpcUaClientConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpetri.opcua.stack.core.Identifiers;
-import com.digitalpetri.opcua.stack.core.types.structured.BrowseResult;
-import com.digitalpetri.opcua.stack.core.types.structured.ReferenceDescription;
+import org.eclipse.milo.opcua.stack.core.Identifiers;
+import org.eclipse.milo.opcua.stack.core.types.structured.BrowseResult;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;

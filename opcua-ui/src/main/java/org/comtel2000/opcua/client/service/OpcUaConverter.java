@@ -23,17 +23,17 @@ import java.util.EnumSet;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.digitalpetri.opcua.stack.core.types.builtin.ByteString;
-import com.digitalpetri.opcua.stack.core.types.builtin.DateTime;
-import com.digitalpetri.opcua.stack.core.types.builtin.ExpandedNodeId;
-import com.digitalpetri.opcua.stack.core.types.builtin.ExtensionObject;
-import com.digitalpetri.opcua.stack.core.types.builtin.NodeId;
-import com.digitalpetri.opcua.stack.core.types.builtin.StatusCode;
-import com.digitalpetri.opcua.stack.core.types.builtin.Variant;
-import com.digitalpetri.opcua.stack.core.types.builtin.XmlElement;
-import com.digitalpetri.opcua.stack.core.types.builtin.unsigned.UByte;
-import com.digitalpetri.opcua.stack.core.types.builtin.unsigned.UInteger;
-import com.digitalpetri.opcua.stack.core.types.builtin.unsigned.Unsigned;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned;
 
 public class OpcUaConverter {
 

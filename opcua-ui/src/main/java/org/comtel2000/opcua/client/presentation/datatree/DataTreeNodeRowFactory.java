@@ -21,9 +21,9 @@ import java.util.HashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.digitalpetri.opcua.stack.core.serialization.xml.XmlEncoder;
-import com.digitalpetri.opcua.stack.core.types.enumerated.NodeClass;
-import com.digitalpetri.opcua.stack.core.types.structured.ReferenceDescription;
+import org.eclipse.milo.opcua.stack.core.serialization.xml.XmlEncoder;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 
 import javafx.beans.Observable;
 import javafx.collections.FXCollections;
