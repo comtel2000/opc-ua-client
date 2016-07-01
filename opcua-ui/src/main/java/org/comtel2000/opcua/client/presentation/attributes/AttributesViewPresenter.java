@@ -23,9 +23,6 @@ import org.comtel2000.opcua.client.presentation.binding.StatusBinding;
 import org.comtel2000.opcua.client.service.OpcUaClientConnector;
 import org.comtel2000.opcua.client.service.OpcUaConverter;
 import org.comtel2000.opcua.client.service.OpcUaConverter.AccessLevel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
@@ -33,7 +30,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
-import org.eclipse.milo.opcua.stack.core.types.structured.WriteValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.Lists;
 
 import javafx.application.Platform;
@@ -80,24 +79,25 @@ public class AttributesViewPresenter implements Initializable {
         final ReferenceDescription rd = selectedReference.get();
         final DataValue dv = selectedDataValue.get();
         if (dv == null || rd == null) {
+          logger.error("nothing selected");
           return;
         }
-
         Variant v = new Variant(OpcUaConverter
             .toWritableDataTypeObject(dv.getValue().getDataType().get(), event.getNewValue()));
-        WriteValue wv = new WriteValue(rd.getNodeId().local().get(), AttributeId.Value.uid(), null,
-            new DataValue(v, dv.getStatusCode(), dv.getSourceTime(), dv.getServerTime()));
-        connection.write(wv).whenCompleteAsync((s, t) -> {
-          if (t != null) {
-            logger.error(t.getMessage(), t);
-          } else {
-            logger.info("{} write '{}' -> '{}' [{}]", rd.getBrowseName(), event.getOldValue(),
-                event.getNewValue(), s);
-          }
-          state.statusTextProperty().set(String.format("write to %s %s", rd.getBrowseName(),
-              (s.isGood() ? "succeed" : "failed: " + s)));
-          updateAttributes(rd);
-        }, Platform::runLater);
+        DataValue value = new DataValue(v, null, null);
+        connection.writeValue(OpcUaConverter.toNodeId(rd.getNodeId()), value)
+            .whenCompleteAsync((s, t) -> {
+              if (t != null) {
+                logger.error(t.getMessage(), t);
+              } else {
+                logger.info("{} write '{}' -> '{}' [{}]", rd.getBrowseName(), event.getOldValue(),
+                    event.getNewValue(), s);
+              }
+              state.statusTextProperty().set(String.format("write to %s %s", rd.getBrowseName(),
+                  (s.isGood() ? "succeed" : "failed: " + s)));
+              updateAttributes(rd);
+            }, Platform::runLater);
+
       } catch (Exception e) {
         logger.error(e.getMessage(), e);
       }
@@ -175,8 +175,8 @@ public class AttributesViewPresenter implements Initializable {
                 table.getItems().add(AttributeItem.get("Value (ServerPicoseconds)",
                     value.getServerPicoseconds().toString()));
               }
-              table.getItems()
-              .add(AttributeItem.get("Value (StatusCode)", OpcUaConverter.toString(value.getStatusCode())));
+              table.getItems().add(AttributeItem.get("Value (StatusCode)",
+                  OpcUaConverter.toString(value.getStatusCode())));
             }
           });
     }
