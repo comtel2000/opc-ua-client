@@ -1,36 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import javafx.geometry.*?>
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.ContextMenu?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.input.KeyCodeCombination?>
 
-<TableView fx:id="table" maxHeight="1.7976931348623157E308"
-	maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity"
-	prefHeight="100.0" prefWidth="800.0" tableMenuButtonVisible="true"
-	xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1"
-	fx:controller="org.comtel2000.opcua.client.presentation.events.EventsViewPresenter">
+<TableView fx:id="table" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" minHeight="-Infinity" minWidth="-Infinity" prefHeight="100.0" prefWidth="800.0" tableMenuButtonVisible="true" xmlns="http://javafx.com/javafx/8.0.60" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.comtel2000.opcua.client.presentation.events.EventsViewPresenter">
 	<columns>
-		<TableColumn fx:id="id" minWidth="50.0" prefWidth="50.0"
-			text="%events.column.id" />
-		<TableColumn fx:id="variable" minWidth="100.0" prefWidth="150.0"
-			text="%events.column.display" />
-		<TableColumn fx:id="mode" minWidth="70.0" prefWidth="70.0"
-			text="Mode" />
-		<TableColumn fx:id="samplingrate" minWidth="100.0"
-			prefWidth="100.0" text="%events.column.rate" />
-		<TableColumn fx:id="value" minWidth="100.0" prefWidth="200.0"
-			text="%events.column.value" />
-		<TableColumn fx:id="quality" minWidth="70.0" prefWidth="70.0"
-			text="%events.column.quality" />
-		<TableColumn fx:id="timestamp" minWidth="100.0" prefWidth="150.0"
-			text="%events.column.updated" />
-		<TableColumn fx:id="lasterror" minWidth="100.0" prefWidth="100.0"
-			text="%events.column.lasterror" />
+		<TableColumn fx:id="id" minWidth="50.0" prefWidth="50.0" text="%events.column.id" />
+		<TableColumn fx:id="variable" minWidth="100.0" prefWidth="150.0" text="%events.column.display" />
+		<TableColumn fx:id="mode" minWidth="70.0" prefWidth="70.0" text="Mode" />
+		<TableColumn fx:id="samplingrate" minWidth="100.0" prefWidth="100.0" text="%events.column.rate" />
+		<TableColumn fx:id="value" minWidth="100.0" prefWidth="200.0" text="%events.column.value" />
+		<TableColumn fx:id="quality" minWidth="70.0" prefWidth="70.0" text="%events.column.quality" />
+		<TableColumn fx:id="timestamp" minWidth="100.0" prefWidth="150.0" text="%events.column.updated" />
+		<TableColumn fx:id="lasterror" minWidth="100.0" prefWidth="100.0" text="%events.column.lasterror" />
 
 	</columns>
 	<columnResizePolicy>
 		<TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
 	</columnResizePolicy>
+   <contextMenu>
+      <ContextMenu>
+        <items>
+          <MenuItem fx:id="showItem" mnemonicParsing="false" onAction="#showAttributes" text="%events.attributes" />
+            <MenuItem fx:id="removeItem" mnemonicParsing="false" onAction="#removeItem" text="%events.remove">
+               <accelerator>
+                  <KeyCodeCombination alt="UP" code="DELETE" control="UP" meta="UP" shift="UP" shortcut="ANY" />
+               </accelerator>
+            </MenuItem>
+            <MenuItem fx:id="removeAllItem" mnemonicParsing="false" onAction="#removeAllItems" text="%events.removeall">
+               <accelerator>
+                  <KeyCodeCombination alt="UP" code="DELETE" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+               </accelerator>
+            </MenuItem>
+            <MenuItem fx:id="exportItem" mnemonicParsing="false" onAction="#exportFile" text="%events.export">
+               <accelerator>
+                  <KeyCodeCombination alt="UP" code="E" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+               </accelerator>
+            </MenuItem>
+            <MenuItem fx:id="importItem" mnemonicParsing="false" onAction="#importFile" text="%events.import">
+               <accelerator>
+                  <KeyCodeCombination alt="UP" code="I" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+               </accelerator>
+            </MenuItem>
+        </items>
+      </ContextMenu>
+   </contextMenu>
 </TableView>

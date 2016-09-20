@@ -16,6 +16,8 @@ package org.comtel2000.opcua.client.presentation.connect;
 import java.net.URL;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -25,6 +27,10 @@ import org.comtel2000.opcua.client.presentation.binding.StatusBinding;
 import org.comtel2000.opcua.client.presentation.datatree.DataTreeNode;
 import org.comtel2000.opcua.client.service.OpcUaClientConnector;
 import org.comtel2000.opcua.client.service.PersistenceService;
+import org.eclipse.milo.opcua.sdk.client.api.identity.UsernameProvider;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
+import org.eclipse.milo.opcua.stack.core.types.structured.ApplicationDescription;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointDescription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,10 +42,16 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.RadioMenuItem;
+import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.input.KeyCode;
+import javafx.scene.layout.HBox;
 
 public class ConnectViewPresenter implements Initializable {
 
@@ -65,6 +77,9 @@ public class ConnectViewPresenter implements Initializable {
   private MenuItem disconnectItem;
 
   @FXML
+  private RadioMenuItem securityItem;
+  
+  @FXML
   private MenuItem aboutItem;
 
   @FXML
@@ -73,12 +88,29 @@ public class ConnectViewPresenter implements Initializable {
   @FXML
   ComboBox<String> address;
 
+
+  @FXML
+  private ToggleButton security;
+  
+
+  @FXML
+  private HBox securityPane;
+  
   @FXML
   Button connectButton;
 
   @FXML
   Button disconnectButton;
 
+  @FXML
+  private TextField user;
+
+  @FXML
+  private PasswordField password;
+
+  @FXML
+  private CheckBox anonymous;
+  
   private ResourceBundle resource;
 
   protected static Executor FX_PLATFORM_EXECUTOR = Platform::runLater;
@@ -93,6 +125,16 @@ public class ConnectViewPresenter implements Initializable {
     session.bind(address.getItems(), "addressHistory");
     session.bind(addressUrl);
 
+    session.bind(user.textProperty(), "user");
+    session.bind(password.textProperty(), "password");
+    
+    user.disableProperty().bind(connectButton.disabledProperty().or(anonymous.selectedProperty()));
+    password.disableProperty().bind(connectButton.disabledProperty().or(anonymous.selectedProperty()));
+    anonymous.disableProperty().bind(connectButton.disabledProperty());
+    
+    anonymous.selectedProperty().addListener((l, a, b) -> connection.setIdentityProvider(b ? null: new UsernameProvider(user.getText(), password.getText())));
+    anonymous.setSelected(true);
+    session.bind(anonymous.selectedProperty(), "anonymous");
     if (address.getItems().isEmpty()) {
       address.getItems().addAll(urls.split(";"));
     }
@@ -105,8 +147,15 @@ public class ConnectViewPresenter implements Initializable {
 
     updateAddressHistory();
 
-    state.connectedProperty().addListener((l, a, b) -> state.statusTextProperty()
-        .set(b ? String.format("connected to: [%s]", addressUrl.get()) : "disconnected"));
+    state.connectedProperty()
+        .addListener(
+            (l, a, b) -> state.statusTextProperty()
+                .set(b
+                    ? String.format("connected to: [%s]",
+                        connection.getEndpointDescription().map(EndpointDescription::getServer)
+                            .map(ApplicationDescription::getApplicationName)
+                            .map(LocalizedText::getText).orElse(addressUrl.get()))
+                    : "disconnected"));
 
     address.disableProperty().bind(state.connectedProperty().or(state.progressVisibleProperty()));
     connectButton.disableProperty()
@@ -120,30 +169,35 @@ public class ConnectViewPresenter implements Initializable {
     connection
         .onConnectionChanged((b, t) -> Platform.runLater(() -> state.connectedProperty().set(b)));
 
+    securityItem.selectedProperty().bindBidirectional(security.selectedProperty());
+    securityPane.visibleProperty().bind(security.selectedProperty());
+    securityPane.setPrefHeight(0);
+    securityPane.visibleProperty().addListener(l -> securityPane.setPrefHeight(securityPane.isVisible() ? 50 : 0));
   }
 
   @FXML
-  public void connect() {
+  void connect() {
     state.progressVisibleProperty().set(true);
     state.rootNodeProperty().set(null);
     addressUrl.set(address.getSelectionModel().getSelectedItem());
     logger.debug("try to open url: {}", addressUrl.get());
-    Executors.newSingleThreadExecutor().execute(() -> {
-      connection.connect(addressUrl.get()).whenCompleteAsync((c, e) -> {
-        state.progressVisibleProperty().set(false);
-        if (e != null) {
-          state.statusTextProperty().set(e.getMessage());
-          logger.error(e.getMessage(), e);
-        } else {
-          readHierarchy();
-          updateAddressHistory();
-        }
-      }, FX_PLATFORM_EXECUTOR);
-    });
+    connection.getEndpoints(addressUrl.get()).thenCompose(endpoints -> {
+          EndpointDescription endpoint = connection.findLowestEndpoint(endpoints).orElseThrow(() -> new CompletionException(new Exception("no endpoint found: " + addressUrl.get())));
+          return connection.connect(addressUrl.get(), endpoint);
+        }).whenCompleteAsync((c, ex) -> {
+          state.progressVisibleProperty().set(false);
+          if (ex != null) {
+            state.statusTextProperty().set(ex.getMessage());
+            logger.error(ex.getMessage(), ex);
+          } else {
+            readHierarchy();
+            updateAddressHistory();
+          }
+        }, FX_PLATFORM_EXECUTOR);
   }
 
   @FXML
-  public void disconnect() {
+  void disconnect() {
     state.progressVisibleProperty().set(true);
     Executors.newSingleThreadExecutor().execute(() -> {
       connection.disconnect().thenAcceptAsync(c -> state.progressVisibleProperty().set(false),
@@ -152,7 +206,7 @@ public class ConnectViewPresenter implements Initializable {
   }
 
   @FXML
-  public void about() {
+  void about() {
     Alert info = new Alert(AlertType.INFORMATION);
     info.setTitle(resource.getString("connect.about"));
     Optional<String> version =
@@ -166,7 +220,7 @@ public class ConnectViewPresenter implements Initializable {
   }
 
   @FXML
-  public void exit() {
+  void exit() {
     disconnect();
     System.exit(0);
   }
@@ -187,7 +241,8 @@ public class ConnectViewPresenter implements Initializable {
   }
 
   private void readHierarchy() {
-    DataTreeNode root = new DataTreeNode(connection, connection.getRootNode(connection.getUrl()));
+    DataTreeNode root = new DataTreeNode(connection, connection.getRootNode(
+        connection.getEndpointDescription().map(EndpointDescription::getEndpointUrl).orElse("-")));
     state.rootNodeProperty().set(root);
     root.setExpanded(true);
   }

@@ -17,11 +17,9 @@ package org.comtel2000.opcua.client.presentation.events;
 
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.comtel2000.opcua.client.service.OpcUaConverter;
-
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaMonitoredItem;
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaSubscription;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
@@ -41,12 +39,13 @@ public class MonitoredEvent implements Consumer<DataValue> {
 
   private final ReferenceDescription reference;
   private final UaSubscription subsciption;
+  private final UaMonitoredItem item;
 
-  public MonitoredEvent(ReferenceDescription reference, UaSubscription subsciption) {
+  public MonitoredEvent(ReferenceDescription reference, UaSubscription subsciption, UaMonitoredItem item) {
     this.reference = Objects.requireNonNull(reference);
     this.subsciption = Objects.requireNonNull(subsciption);
-    this.subsciption.getMonitoredItems().stream().findFirst()
-        .ifPresent(m -> m.setValueConsumer(this));
+    this.item = Objects.requireNonNull(item);
+    this.item.setValueConsumer(this);
   }
 
   @Override
@@ -110,8 +109,8 @@ public class MonitoredEvent implements Consumer<DataValue> {
     return subsciption;
   }
 
-  public Optional<UaMonitoredItem> getMonitoredItem() {
-    return subsciption.getMonitoredItems().stream().findFirst();
+  public UaMonitoredItem getMonitoredItem() {
+    return item;
   }
 
   @Override
@@ -124,18 +123,24 @@ public class MonitoredEvent implements Consumer<DataValue> {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
+    if (this == obj){
       return true;
-    if (obj == null)
+    }
+    if (obj == null){
       return false;
-    if (getClass() != obj.getClass())
+    }
+    if (getClass() != obj.getClass()){
       return false;
+    }
     MonitoredEvent other = (MonitoredEvent) obj;
-    if (reference == null) {
-      if (other.reference != null)
-        return false;
-    } else if (!reference.equals(other.reference))
+    if (!reference.equals(other.reference)){
       return false;
+    }
+    
+    if (!item.equals(other.item)){
+      return false;
+    }
+  
     return true;
   }
 

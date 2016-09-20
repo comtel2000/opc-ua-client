@@ -38,6 +38,8 @@ public class StatusBinding {
 
   private final ObjectProperty<ReferenceDescription> selectedTreeItem;
 
+  private final ObjectProperty<ReferenceDescription> showAttributeItem;
+  
   private final ObservableList<ReferenceDescription> subscribeTreeItem;
 
   public StatusBinding() {
@@ -46,6 +48,7 @@ public class StatusBinding {
     statusText = new SimpleStringProperty("");
     rootNode = new SimpleObjectProperty<>(null);
     selectedTreeItem = new SimpleObjectProperty<>(null);
+    showAttributeItem = new SimpleObjectProperty<>(null);
     subscribeTreeItem = FXCollections.observableArrayList();
   }
 
@@ -69,6 +72,10 @@ public class StatusBinding {
     return selectedTreeItem;
   }
 
+  public ObjectProperty<ReferenceDescription> showAttributeItemProperty() {
+    return showAttributeItem;
+  }
+  
   public ObservableList<ReferenceDescription> subscribeTreeItemList() {
     return subscribeTreeItem;
   }

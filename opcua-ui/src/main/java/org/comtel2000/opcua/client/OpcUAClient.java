@@ -20,8 +20,11 @@ import org.comtel2000.opcua.client.service.OpcUaClientConnector;
 import org.comtel2000.opcua.client.service.PersistenceService;
 import org.slf4j.LoggerFactory;
 
+
 import com.airhacks.afterburner.injection.Injector;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
 import javafx.application.Application;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -43,6 +46,9 @@ public class OpcUAClient extends Application {
     stage.setResizable(true);
 
     Injector.setLogger(logger::trace);
+
+    LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
+    lc.getLogger("org.eclipse.milo.opcua.sdk.client.subscriptions").setLevel(Level.INFO);
 
     PersistenceService session = Injector.instantiateModelOrService(PersistenceService.class);
 

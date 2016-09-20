@@ -40,8 +40,14 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 
 public class AttributesViewPresenter implements Initializable {
 
@@ -60,8 +66,10 @@ public class AttributesViewPresenter implements Initializable {
   @FXML
   private TableColumn<AttributeItem, String> value;
 
-  private final ObjectProperty<ReferenceDescription> selectedReference =
-      new SimpleObjectProperty<>();
+  @FXML
+  private MenuItem copyItem;
+
+  private final ObjectProperty<ReferenceDescription> selectedReference = new SimpleObjectProperty<>();
   private final ObjectProperty<DataValue> selectedDataValue = new SimpleObjectProperty<>();
 
   private final static Logger logger = LoggerFactory.getLogger(AttributesViewPresenter.class);
@@ -82,28 +90,55 @@ public class AttributesViewPresenter implements Initializable {
           logger.error("nothing selected");
           return;
         }
-        Variant v = new Variant(OpcUaConverter
-            .toWritableDataTypeObject(dv.getValue().getDataType().get(), event.getNewValue()));
+        Variant v = new Variant(OpcUaConverter.toWritableDataTypeObject(dv.getValue().getDataType().get(), event.getNewValue()));
         DataValue value = new DataValue(v, null, null);
-        connection.writeValue(OpcUaConverter.toNodeId(rd.getNodeId()), value)
-            .whenCompleteAsync((s, t) -> {
-              if (t != null) {
-                logger.error(t.getMessage(), t);
-              } else {
-                logger.info("{} write '{}' -> '{}' [{}]", rd.getBrowseName(), event.getOldValue(),
-                    event.getNewValue(), s);
-              }
-              state.statusTextProperty().set(String.format("write to %s %s", rd.getBrowseName(),
-                  (s.isGood() ? "succeed" : "failed: " + s)));
-              updateAttributes(rd);
-            }, Platform::runLater);
+        connection.writeValue(OpcUaConverter.toNodeId(rd.getNodeId()), value).whenCompleteAsync((s, t) -> {
+          if (t != null) {
+            logger.error(t.getMessage(), t);
+          } else {
+            logger.info("{} write '{}' -> '{}' [{}]", rd.getBrowseName(), event.getOldValue(), event.getNewValue(), s);
+          }
+          state.statusTextProperty().set(String.format("write to %s %s", rd.getBrowseName(), (s.isGood() ? "succeed" : "failed: " + s)));
+          updateAttributes(rd);
+        }, Platform::runLater);
 
       } catch (Exception e) {
         logger.error(e.getMessage(), e);
       }
     });
 
-    state.selectedTreeItemProperty().addListener((l, a, b) -> updateAttributes(b));
+    state.showAttributeItemProperty().addListener((l, a, b) -> updateAttributes(b));
+
+    bindContextMenu();
+    // registerKeys();
+
+  }
+
+  private void bindContextMenu() {
+    copyItem.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
+  }
+
+  private void registerKeys() {
+    KeyCombination copyEvent = new KeyCodeCombination(KeyCode.C, KeyCombination.SHORTCUT_DOWN);
+    table.setOnKeyPressed(e -> {
+      if (copyEvent.match(e)) {
+        copyValue();
+      }
+    });
+  }
+
+  @FXML
+  void copyValue() {
+    if (!table.isFocused()) {
+      return;
+    }
+    AttributeItem item = table.getSelectionModel().getSelectedItem();
+    if (item != null && item.valueProperty().get() != null) {
+      Clipboard clipboard = Clipboard.getSystemClipboard();
+      ClipboardContent content = new ClipboardContent();
+      content.putString(item.valueProperty().get());
+      clipboard.setContent(content);
+    }
   }
 
   private void updateAttributes(ReferenceDescription b) {
@@ -116,19 +151,16 @@ public class AttributesViewPresenter implements Initializable {
     table.getItems().add(AttributeItem.get("DisplayName", b.getDisplayName().getText()));
     table.getItems().add(AttributeItem.get("BrowseName", b.getBrowseName().toParseableString()));
     table.getItems().add(AttributeItem.get("NodeId", b.getNodeId().toParseableString()));
-    table.getItems().add(AttributeItem.get("NodeClass", b.getNodeClass().toString()));
-    table.getItems()
-        .add(AttributeItem.get("ReferenceType", b.getReferenceTypeId().toParseableString()));
-    table.getItems().add(AttributeItem.get("Forward", b.getIsForward().toString()));
+    table.getItems().add(AttributeItem.get("NodeClass", String.valueOf(b.getNodeClass())));
+    table.getItems().add(AttributeItem.get("ReferenceType", b.getReferenceTypeId().toParseableString()));
+    table.getItems().add(AttributeItem.get("Forward", String.valueOf(b.getIsForward())));
     table.getItems().add(AttributeItem.get("TypeId", b.getTypeId().toParseableString()));
-    table.getItems()
-        .add(AttributeItem.get("TypeDefinition", b.getTypeDefinition().toParseableString()));
+    table.getItems().add(AttributeItem.get("TypeDefinition", b.getTypeDefinition().toParseableString()));
 
     if (b.getNodeId().isLocal() && b.getNodeClass() == NodeClass.Variable) {
       connection
           .read(b.getNodeId().local().get(),
-              Lists.newArrayList(AttributeId.Description.uid(), AttributeId.AccessLevel.uid(),
-                  AttributeId.UserAccessLevel.uid(), AttributeId.Value.uid()))
+              Lists.newArrayList(AttributeId.Description.uid(), AttributeId.AccessLevel.uid(), AttributeId.UserAccessLevel.uid(), AttributeId.Value.uid()))
           .whenComplete((d, t) -> {
             if (t != null) {
               logger.error(t.getMessage(), t);
@@ -136,55 +168,42 @@ public class AttributesViewPresenter implements Initializable {
             }
             if (d.size() > 3) {
               DataValue descr = d.get(0);
-              table.getItems()
-                  .add(AttributeItem.get("Description", OpcUaConverter.toString(descr.getValue())));
+              table.getItems().add(AttributeItem.get("Description", OpcUaConverter.toString(descr.getValue())));
 
               DataValue accessLevel = d.get(1);
-              EnumSet<AccessLevel> level =
-                  OpcUaConverter.AccessLevel.fromMask((UByte) accessLevel.getValue().getValue());
-              table.getItems()
-                  .add(AttributeItem.get("AccessLevel", OpcUaConverter.toString(level)));
+              EnumSet<AccessLevel> level = OpcUaConverter.AccessLevel.fromMask((UByte) accessLevel.getValue().getValue());
+              table.getItems().add(AttributeItem.get("AccessLevel", OpcUaConverter.toString(level)));
               DataValue userAccessLevel = d.get(2);
-              EnumSet<AccessLevel> userLevel = OpcUaConverter.AccessLevel
-                  .fromMask((UByte) userAccessLevel.getValue().getValue());
-              table.getItems()
-                  .add(AttributeItem.get("UserAccessLevel", OpcUaConverter.toString(userLevel)));
+              EnumSet<AccessLevel> userLevel = OpcUaConverter.AccessLevel.fromMask((UByte) userAccessLevel.getValue().getValue());
+              table.getItems().add(AttributeItem.get("UserAccessLevel", OpcUaConverter.toString(userLevel)));
 
               DataValue value = d.get(3);
               selectedDataValue.set(value);
               table.getItems()
-                  .add(AttributeItem.get("Value", OpcUaConverter.toString(value.getValue()),
-                      level.contains(AccessLevel.CurrentWrite) && isSupported(value)));
+                  .add(AttributeItem.get("Value", OpcUaConverter.toString(value.getValue()), level.contains(AccessLevel.CurrentWrite) && isSupported(value)));
               if (value.getValue().getDataType().isPresent()) {
-                table.getItems().add(AttributeItem.get("Value (DataType)",
-                    OpcUaConverter.toDataTypeString(value.getValue().getDataType().get())));
+                table.getItems().add(AttributeItem.get("Value (DataType)", OpcUaConverter.toDataTypeString(value.getValue().getDataType().get())));
               }
               if (value.getSourceTime() != null) {
-                table.getItems().add(AttributeItem.get("Value (SourceTime)",
-                    OpcUaConverter.toString(value.getSourceTime())));
+                table.getItems().add(AttributeItem.get("Value (SourceTime)", OpcUaConverter.toString(value.getSourceTime())));
               }
               if (value.getSourcePicoseconds() != null) {
-                table.getItems().add(AttributeItem.get("Value (SourcePicoseconds)",
-                    value.getSourcePicoseconds().toString()));
+                table.getItems().add(AttributeItem.get("Value (SourcePicoseconds)", value.getSourcePicoseconds().toString()));
               }
               if (value.getServerTime() != null) {
-                table.getItems().add(AttributeItem.get("Value (ServerTime)",
-                    OpcUaConverter.toString(value.getServerTime())));
+                table.getItems().add(AttributeItem.get("Value (ServerTime)", OpcUaConverter.toString(value.getServerTime())));
               }
               if (value.getServerPicoseconds() != null) {
-                table.getItems().add(AttributeItem.get("Value (ServerPicoseconds)",
-                    value.getServerPicoseconds().toString()));
+                table.getItems().add(AttributeItem.get("Value (ServerPicoseconds)", value.getServerPicoseconds().toString()));
               }
-              table.getItems().add(AttributeItem.get("Value (StatusCode)",
-                  OpcUaConverter.toString(value.getStatusCode())));
+              table.getItems().add(AttributeItem.get("Value (StatusCode)", OpcUaConverter.toString(value.getStatusCode())));
             }
           });
     }
   }
 
   private boolean isSupported(DataValue value) {
-    if (!value.getValue().getDataType().isPresent()
-        || !value.getValue().getDataType().isPresent()) {
+    if (!value.getValue().getDataType().isPresent() || !value.getValue().getDataType().isPresent()) {
       return false;
     }
     if (!(value.getValue().getDataType().get().getIdentifier() instanceof UInteger)) {

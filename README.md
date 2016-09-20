@@ -24,6 +24,10 @@ java -jar opcua-ui/target/opc-ua-client-jar-with-dependencies.jar
 | opc.tcp://opcuaserver.com:51210/UA/SampleServer              | http://opcuaserver.com     |
 | opc.tcp://uademo.prosysopc.com:53530/OPCUA/SimulationServer  | http://prosysopc.com       |
 
+## Features
+- simple security (user/password)
+- read, write, browse, monitor
+- list import/export of monitored nodes (requires latest milo snapshot)
 
 ## Links
 - [Eclipse Milo](https://github.com/eclipse/milo)
