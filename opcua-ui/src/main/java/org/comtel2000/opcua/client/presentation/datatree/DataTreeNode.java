@@ -1,33 +1,29 @@
 /*******************************************************************************
  * Copyright (c) 2016 comtel2000
  *
- * Licensed under the Apache License, version 2.0 (the "License"); 
- * you may not use this file except in compliance with the License. 
- * You may obtain a copy of the License at:
+ * Licensed under the Apache License, version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at:
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  *******************************************************************************/
 package org.comtel2000.opcua.client.presentation.datatree;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import org.comtel2000.opcua.client.service.OpcUaClientConnector;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.eclipse.milo.opcua.stack.core.Identifiers;
 import org.eclipse.milo.opcua.stack.core.types.structured.BrowseResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -39,15 +35,14 @@ public class DataTreeNode extends TreeItem<ReferenceDescription> {
 
   protected final static Logger logger = LoggerFactory.getLogger(DataTreeNode.class);
 
-  final AtomicBoolean updated = new AtomicBoolean(false);
-  final AtomicBoolean leaf = new AtomicBoolean(false);
+  boolean updated = false;
+  boolean leaf = false;
 
   final OpcUaClientConnector connection;
 
-  private final static java.util.function.Predicate<? super ReferenceDescription> hasNotifierFilter =
-      (r) -> {
-        return r != null && !Identifiers.HasNotifier.equals(r.getReferenceTypeId());
-      };
+  private final static java.util.function.Predicate<? super ReferenceDescription> hasNotifierFilter = (r) -> {
+    return r != null && !Identifiers.HasNotifier.equals(r.getReferenceTypeId());
+  };
 
   public DataTreeNode(OpcUaClientConnector c, ReferenceDescription rd) {
     super(rd);
@@ -56,20 +51,17 @@ public class DataTreeNode extends TreeItem<ReferenceDescription> {
 
   @Override
   public boolean isLeaf() {
-    return leaf.get();
+    return leaf;
   }
 
   @Override
   public ObservableList<TreeItem<ReferenceDescription>> getChildren() {
-    if (updated.getAndSet(true)) {
+    if (updated) {
       return super.getChildren();
     }
-
-    CompletableFuture<BrowseResult> result =
-        connection.getHierarchicalReferences(getValue().getNodeId());
-    result
-        .thenApply(r -> Arrays.stream(r.getReferences()).filter(hasNotifierFilter)
-            .map(this::createNode).collect(Collectors.toList()))
+    updated = true;
+    CompletableFuture<BrowseResult> result = connection.getHierarchicalReferences(getValue().getNodeId());
+    result.thenApply(r -> Arrays.stream(r.getReferences()).filter(hasNotifierFilter).map(this::createNode).collect(Collectors.toList()))
         .whenCompleteAsync(this::updateChildren, Platform::runLater);
     return FXCollections.emptyObservableList();
   }
@@ -77,17 +69,16 @@ public class DataTreeNode extends TreeItem<ReferenceDescription> {
   private void updateChildren(List<DataTreeNode> list, Throwable t) {
     if (t != null) {
       logger.error(t.getMessage(), t);
-      updated.set(false);
+      updated = false;
       return;
     }
     if (!super.getChildren().isEmpty()) {
       logger.error("double update detected: {}", list);
       return;
     }
-    leaf.set(list.isEmpty());
+    leaf = list.isEmpty();
     if (!super.getChildren().addAll(list)) {
-      fireEvent(new TreeModificationEvent<ReferenceDescription>(valueChangedEvent(),
-          DataTreeNode.this, getValue()));
+      fireEvent(new TreeModificationEvent<ReferenceDescription>(valueChangedEvent(), DataTreeNode.this, getValue()));
     }
 
   }
@@ -102,7 +93,6 @@ public class DataTreeNode extends TreeItem<ReferenceDescription> {
 
   @Override
   public String toString() {
-    return "DataTreeNode [updated=" + updated + ", leaf=" + leaf + ", children="
-        + super.getChildren().size() + "]";
+    return "DataTreeNode [updated=" + updated + ", leaf=" + leaf + ", children=" + super.getChildren().size() + "]";
   }
 }

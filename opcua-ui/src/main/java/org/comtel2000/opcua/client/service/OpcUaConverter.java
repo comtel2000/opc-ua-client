@@ -15,6 +15,7 @@ package org.comtel2000.opcua.client.service;
 
 import java.sql.Date;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -60,8 +61,7 @@ public class OpcUaConverter {
     }
 
     public static EnumSet<AccessLevel> fromMask(int accessLevel) {
-      return Arrays.stream(values()).filter(al -> (al.value & accessLevel) != 0)
-          .collect(Collectors.toCollection(() -> EnumSet.noneOf(AccessLevel.class)));
+      return Arrays.stream(values()).filter(al -> (al.value & accessLevel) != 0).collect(Collectors.toCollection(() -> EnumSet.noneOf(AccessLevel.class)));
     }
 
     public static EnumSet<AccessLevel> fromMask(UByte accessLevel) {
@@ -191,8 +191,7 @@ public class OpcUaConverter {
       case 12:
         return value;
       case 13:
-        return new DateTime(Date
-            .from(ZonedDateTime.from(DateTimeFormatter.ISO_DATE_TIME.parse(value)).toInstant()));
+        return new DateTime(java.util.Date.from(ZonedDateTime.from(DateTimeFormatter.ISO_DATE_TIME.parse(value)).toInstant()));
       case 14:
         return UUID.fromString(value);
       case 15:
@@ -207,7 +206,7 @@ public class OpcUaConverter {
   }
 
   public static ZonedDateTime toZonedDateTime(DateTime time) {
-    return Instant.ofEpochMilli(time.getJavaTime()).atZone(ZoneOffset.systemDefault());
+    return Instant.ofEpochMilli(time.getJavaTime()).atZone(ZoneId.systemDefault());
   }
 
   public static String toString(DateTime time) {

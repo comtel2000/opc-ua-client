@@ -83,284 +83,282 @@ import com.google.common.collect.UnmodifiableIterator;
 
 public class OpcUaClientConnector implements SessionActivityListener {
 
-    protected final static Logger logger = LoggerFactory.getLogger(OpcUaClientConnector.class);
+  protected final static Logger logger = LoggerFactory.getLogger(OpcUaClientConnector.class);
 
-    private final double DEFAULT_PUBLISH_INTERVAL = 1000.0;
+  private final double DEFAULT_PUBLISH_INTERVAL = 1000.0;
 
-    private final AtomicReference<EndpointDescription> endpointDescription = new AtomicReference<>();
+  private final AtomicReference<EndpointDescription> endpointDescription = new AtomicReference<>();
 
-    private final AtomicReference<IdentityProvider> identityProvider = new AtomicReference<>();
+  private final AtomicReference<IdentityProvider> identityProvider = new AtomicReference<>();
 
-    private final AtomicReference<OpcUaClient> client = new AtomicReference<>();
+  private final AtomicReference<OpcUaClient> client = new AtomicReference<>();
 
-    private final AtomicLong clientHandles = new AtomicLong();
+  private final AtomicLong clientHandles = new AtomicLong();
 
-    private final String name;
+  private final AtomicReference<BiConsumer<Boolean, Throwable>> listener = new AtomicReference<>();
 
-    private final AtomicReference<BiConsumer<Boolean, Throwable>> listener = new AtomicReference<>();
+  private final String name;
 
-    private Executor pool = Executors.newCachedThreadPool();
 
-    public OpcUaClientConnector() {
-        this("OPC-UA Client");
+  private Executor pool = Executors.newCachedThreadPool();
+
+  public OpcUaClientConnector() {
+    this("OPC-UA Client");
+  }
+
+  public OpcUaClientConnector(String name) {
+    this.name = name;
+    this.pool = Executors.newCachedThreadPool(runnable -> {
+      Thread th = new Thread(runnable);
+      th.setName("client-connector-" + th.getId());
+      th.setDaemon(true);
+      return th;
+    });
+  }
+
+  private CompletableFuture<OpcUaClient> newClient(OpcUaClientConfig config) {
+    return CompletableFuture.supplyAsync(() -> {
+      OpcUaClient c = new OpcUaClient(config);
+      c.addFaultListener(fault -> logger.error("fault on {}", fault.getResponseHeader().getServiceResult()));
+      c.addSessionActivityListener(this);
+      client.set(c);
+      return c;
+    }, pool);
+  }
+
+  public CompletableFuture<OpcUaClient> getClient() {
+    return CompletableFuture.supplyAsync(() -> {
+      OpcUaClient c = client.get();
+      if (c == null) {
+        throw new CompletionException(new IOException("not connected"));
+      }
+      return c;
+    }, pool);
+  }
+
+  public void onConnectionChanged(BiConsumer<Boolean, Throwable> c) {
+    this.listener.set(c);
+  }
+
+  public CompletableFuture<EndpointDescription[]> getEndpoints(String url) {
+    return CompletableFuture.supplyAsync(() -> {
+      logger.debug("search for endpoints of url: {}", url);
+      return null;
+    }, pool).thenCompose(t -> UaTcpStackClient.getEndpoints(url));
+  }
+
+  public CompletableFuture<UaClient> connect(String url, EndpointDescription endpoint) {
+    clientHandles.set(0);
+    endpointDescription.set(endpoint);
+
+    logger.debug("use endpoint: {} [{}]", endpointDescription.get().getEndpointUrl(), endpointDescription.get().getSecurityMode());
+
+    if (!url.equals(endpointDescription.get().getEndpointUrl())) {
+      logger.warn("fix search (returned) endpoint url missmatch: {} ({})", url, endpointDescription.get().getEndpointUrl());
+      endpointDescription.set(changeEndpointUrl(endpointDescription.get(), url));
     }
 
-    public OpcUaClientConnector(String name) {
-        this.name = name;
-        this.pool = Executors.newCachedThreadPool(runnable -> {
-            Thread th = new Thread(runnable);
-            th.setName("client-connector-" + th.getId());
-            th.setDaemon(true);
-            return th;
-        });
-    }
+    OpcUaClientConfig config = OpcUaClientConfig.builder().setApplicationName(LocalizedText.english(name)).setApplicationUri("urn:comtel:opcua:client")
+        .setEndpoint(endpointDescription.get()).setIdentityProvider(getIdentityProvider().orElse(new AnonymousProvider())).setRequestTimeout(uint(5000))
+        .build();
 
-    private CompletableFuture<OpcUaClient> newClient(OpcUaClientConfig config) {
-        return CompletableFuture.supplyAsync(() -> {
-            OpcUaClient c = new OpcUaClient(config);
-            c.addFaultListener(fault -> logger.error("fault on {}", fault.getResponseHeader().getServiceResult()));
-            c.addSessionActivityListener(this);
-            client.set(c);
-            return c;
-        }, pool);
-    }
+    return newClient(config).thenCompose(c -> c.connect());
+  }
 
-    public CompletableFuture<OpcUaClient> getClient() {
-        return CompletableFuture.supplyAsync(() -> {
-            OpcUaClient c = client.get();
-            if (c == null) {
-                throw new CompletionException(new IOException("not connected"));
-            }
-            return c;
-        }, pool);
-    }
+  public Optional<EndpointDescription> findLowestEndpoint(EndpointDescription[] endpoints) {
+    return Arrays.stream(endpoints).sorted((e1, e2) -> e1.getSecurityLevel().intValue() - e2.getSecurityLevel().intValue()).findFirst();
+  }
 
-    public void onConnectionChanged(BiConsumer<Boolean, Throwable> c) {
-        this.listener.set(c);
-    }
+  public void setIdentityProvider(IdentityProvider provider) {
+    identityProvider.set(provider);
+  }
 
-    public CompletableFuture<EndpointDescription[]> getEndpoints(String url) {
-        return CompletableFuture.supplyAsync(() -> {
-            logger.debug("search for endpoints of url: {}", url);
-            return null;
-        }, pool).thenCompose(t -> UaTcpStackClient.getEndpoints(url));
-    }
+  public Optional<IdentityProvider> getIdentityProvider() {
+    return Optional.ofNullable(identityProvider.get());
+  }
 
-    public CompletableFuture<UaClient> connect(String url, EndpointDescription endpoint) {
+  public Optional<EndpointDescription> getEndpointDescription() {
+    return Optional.ofNullable(endpointDescription.get());
+  }
 
-        endpointDescription.set(endpoint);
+  public CompletableFuture<UaSubscription> modify(UaSubscription subscription, double publishingInterval, int lifetimeCount, int maxKeepAliveCount,
+      int maxNotifications, byte prio) throws InterruptedException, ExecutionException {
+    return getClient().thenCompose(c -> c.getSubscriptionManager().modifySubscription(subscription.getSubscriptionId(), publishingInterval, uint(lifetimeCount),
+        uint(maxKeepAliveCount), uint(maxNotifications), UByte.valueOf(prio)));
+  }
 
-        logger.debug("use endpoint: {} [{}]", endpointDescription.get().getEndpointUrl(), endpointDescription.get().getSecurityMode());
+  public CompletableFuture<Tuple2<UaSubscription, UaMonitoredItem>> subscribe(ReferenceDescription rd) {
+    return subscribe(Collections.singletonList(rd)).thenApply(t -> new Tuple2<>(t.v1, t.v2.get(0)));
+  }
 
-        if (!url.equals(endpointDescription.get().getEndpointUrl())) {
-            logger.warn("fix search (returned) endpoint url missmatch: {} ({})", url, endpointDescription.get().getEndpointUrl());
-            endpointDescription.set(changeEndpointUrl(endpointDescription.get(), url));
-        }
+  public CompletableFuture<Tuple2<UaSubscription, UaMonitoredItem>> subscribe(ReferenceDescription rd, double publishInterval) {
+    return subscribe(Collections.singletonList(rd), publishInterval).thenApply(t -> new Tuple2<>(t.v1, t.v2.get(0)));
+  }
 
-        OpcUaClientConfig config = OpcUaClientConfig.builder().setApplicationName(LocalizedText.english(name)).setApplicationUri("urn:comtel:opcua:client")
-                .setEndpoint(endpointDescription.get()).setIdentityProvider(getIdentityProvider().orElse(new AnonymousProvider())).setRequestTimeout(uint(5000))
-                .build();
+  public CompletableFuture<Tuple2<UaSubscription, List<UaMonitoredItem>>> subscribe(List<ReferenceDescription> references) {
+    return subscribe(references, DEFAULT_PUBLISH_INTERVAL);
+  }
 
-        return newClient(config).thenCompose(c -> c.connect());
-    }
+  public CompletableFuture<Tuple2<UaSubscription, List<UaMonitoredItem>>> subscribe(List<ReferenceDescription> references, double publishInterval) {
 
-    public Optional<EndpointDescription> findLowestEndpoint(EndpointDescription[] endpoints) {
-        return Arrays.stream(endpoints).sorted((e1, e2) -> e1.getSecurityLevel().intValue() - e2.getSecurityLevel().intValue()).findFirst();
-    }
-
-    public void setIdentityProvider(IdentityProvider provider) {
-        identityProvider.set(provider);
-    }
-
-    public Optional<IdentityProvider> getIdentityProvider() {
-        return Optional.ofNullable(identityProvider.get());
-    }
-
-    public Optional<EndpointDescription> getEndpointDescription() {
-        return Optional.ofNullable(endpointDescription.get());
-    }
-
-    public CompletableFuture<UaSubscription> modify(UaSubscription subscription, double publishingInterval, int lifetimeCount, int maxKeepAliveCount,
-            int maxNotifications, byte prio) throws InterruptedException, ExecutionException {
-        return getClient().thenCompose(c -> c.getSubscriptionManager().modifySubscription(subscription.getSubscriptionId(), publishingInterval,
-                uint(lifetimeCount), uint(maxKeepAliveCount), uint(maxNotifications), UByte.valueOf(prio)));
-    }
-
-    public CompletableFuture<Tuple2<UaSubscription, UaMonitoredItem>> subscribe(ReferenceDescription rd) {
-        return subscribe(Collections.singletonList(rd)).thenApply(t -> new Tuple2<>(t.v1, t.v2.get(0)));
-    }
-
-    public CompletableFuture<Tuple2<UaSubscription, UaMonitoredItem>> subscribe(ReferenceDescription rd, double publishInterval) {
-        return subscribe(Collections.singletonList(rd), publishInterval).thenApply(t -> new Tuple2<>(t.v1, t.v2.get(0)));
-    }
-
-    public CompletableFuture<Tuple2<UaSubscription, List<UaMonitoredItem>>> subscribe(List<ReferenceDescription> references) {
-        return subscribe(references, DEFAULT_PUBLISH_INTERVAL);
-    }
-
-    public CompletableFuture<Tuple2<UaSubscription, List<UaMonitoredItem>>> subscribe(List<ReferenceDescription> references, double publishInterval) {
-
-        return getClient().thenApply(c -> {
-            UaSubscription subscription = c.getSubscriptionManager().getSubscriptions().stream()
-                    .filter(s -> s.getRevisedPublishingInterval() == publishInterval).findFirst().orElseGet(() -> {
-                        try {
-                            return c.getSubscriptionManager().createSubscription(publishInterval).get();
-                        } catch (InterruptedException | ExecutionException e) {
-                            logger.error(e.getMessage(), e);
-                            disconnect();
-                        }
-                        return null;
-                    });
-
-            List<MonitoredItemCreateRequest> list = references.stream().map(rd -> rd.getNodeId().local().get())
-                    .map(node -> new ReadValueId(node, AttributeId.Value.uid(), null, QualifiedName.NULL_VALUE))
-                    .map(v -> new MonitoredItemCreateRequest(v, MonitoringMode.Reporting,
-                            new MonitoringParameters(uint(clientHandles.getAndIncrement()), publishInterval, null, uint(1), true)))
-                    .collect(Collectors.toList());
-            List<UaMonitoredItem> items;
+    return getClient().thenApply(c -> {
+      UaSubscription subscription =
+          c.getSubscriptionManager().getSubscriptions().stream().filter(s -> s.getRevisedPublishingInterval() == publishInterval).findFirst().orElseGet(() -> {
             try {
-                items = subscription.createMonitoredItems(TimestampsToReturn.Both, list).get();
+              return c.getSubscriptionManager().createSubscription(publishInterval).get();
             } catch (InterruptedException | ExecutionException e) {
-                throw new CompletionException(e);
+              logger.error(e.getMessage(), e);
+              disconnect();
             }
-            return new Tuple2<>(subscription, items);
-        });
+            return null;
+          });
+
+      List<MonitoredItemCreateRequest> list = references.stream().map(rd -> rd.getNodeId().local().get())
+          .map(node -> new ReadValueId(node, AttributeId.Value.uid(), null, QualifiedName.NULL_VALUE)).map(v -> new MonitoredItemCreateRequest(v,
+              MonitoringMode.Reporting, new MonitoringParameters(uint(clientHandles.getAndIncrement()), publishInterval, null, uint(1), true)))
+          .collect(Collectors.toList());
+      List<UaMonitoredItem> items;
+      try {
+        items = subscription.createMonitoredItems(TimestampsToReturn.Both, list).get();
+      } catch (InterruptedException | ExecutionException e) {
+        throw new CompletionException(e);
+      }
+      return new Tuple2<>(subscription, items);
+    });
+  }
+
+  public CompletableFuture<UaSubscription> unsubscribe(UaSubscription subscription) {
+
+    return getClient().thenCompose(c -> {
+      logger.debug("remove add MonitoredItem from subscriptionId: {}", subscription.getSubscriptionId());
+      // c.deleteMonitoredItems(subscription.getSubscriptionId(),
+      // subscription.getMonitoredItems().stream().map(UaMonitoredItem::getMonitoredItemId).collect(Collectors.toList()));
+      return c.getSubscriptionManager().deleteSubscription(subscription.getSubscriptionId());
+
+    });
+  }
+
+  public CompletableFuture<DeleteMonitoredItemsResponse> unsubscribe(UInteger subscriptionId, UaMonitoredItem item) {
+    logger.debug("remove MonitoredItemId: {}", item.getMonitoredItemId());
+    return getClient().thenCompose(c -> c.deleteMonitoredItems(subscriptionId, Collections.singletonList(item.getMonitoredItemId())));
+  }
+
+  public CompletableFuture<Void> unsubscribeAll() {
+    OpcUaClient c = client.get();
+    if (c == null) {
+      return buildCompleteExceptionally(Void.class, new IOException("not connected"));
     }
 
-    public CompletableFuture<UaSubscription> unsubscribe(UaSubscription subscription) {
-
-        return getClient().thenCompose(c -> {
-            logger.debug("remove add MonitoredItem from subscriptionId: {}", subscription.getSubscriptionId());
-//            c.deleteMonitoredItems(subscription.getSubscriptionId(),
-//                    subscription.getMonitoredItems().stream().map(UaMonitoredItem::getMonitoredItemId).collect(Collectors.toList()));
-            return c.getSubscriptionManager().deleteSubscription(subscription.getSubscriptionId());
-
-        });
+    UnmodifiableIterator<UaSubscription> it = c.getSubscriptionManager().getSubscriptions().iterator();
+    List<CompletableFuture<UaSubscription>> futures = new ArrayList<>();
+    while (it.hasNext()) {
+      futures.add(unsubscribe(it.next()));
     }
 
-    public CompletableFuture<DeleteMonitoredItemsResponse> unsubscribe(UInteger subscriptionId, UaMonitoredItem item) {
-        logger.debug("remove MonitoredItemId: {}", item.getMonitoredItemId());
-        return getClient().thenCompose(c -> c.deleteMonitoredItems(subscriptionId, Collections.singletonList(item.getMonitoredItemId())));
+    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+
+  }
+
+  public CompletableFuture<UaClient> disconnect() {
+    return getClient().thenCompose(c -> c.disconnect());
+  }
+
+  public CompletableFuture<Tuple2<ServerState, ZonedDateTime>> readServerStateAndTime() {
+    List<NodeId> nodeIds = Lists.newArrayList(Identifiers.Server_ServerStatus_State, Identifiers.Server_ServerStatus_CurrentTime);
+    return getClient().thenCompose(c -> c.readValues(0.0, TimestampsToReturn.Both, nodeIds))
+        .thenApply(values -> new Tuple2<ServerState, ZonedDateTime>(ServerState.from((Integer) values.get(0).getValue().getValue()),
+            OpcUaConverter.toZonedDateTime((DateTime) values.get(1).getValue().getValue())));
+  }
+
+  public CompletableFuture<ServerState> readServerState() {
+    List<NodeId> nodeIds = Collections.singletonList(Identifiers.Server_ServerStatus_State);
+    return getClient().thenCompose(c -> c.readValues(0.0, TimestampsToReturn.Both, nodeIds))
+        .thenApply(values -> ServerState.from((Integer) values.get(0).getValue().getValue()));
+  }
+
+  @Override
+  public void onSessionActive(UaSession session) {
+    logger.info("active session id: {}", session.getSessionId());
+    BiConsumer<Boolean, Throwable> consumer = listener.get();
+    if (consumer != null) {
+      consumer.accept(Boolean.TRUE, null);
     }
+  }
 
-    public CompletableFuture<Void> unsubscribeAll() {
-        OpcUaClient c = client.get();
-        if (c == null) {
-            return buildCompleteExceptionally(Void.class, new IOException("not connected"));
-        }
-
-        UnmodifiableIterator<UaSubscription> it = c.getSubscriptionManager().getSubscriptions().iterator();
-        List<CompletableFuture<UaSubscription>> futures = new ArrayList<>();
-        while (it.hasNext()) {
-            futures.add(unsubscribe(it.next()));
-        }
-
-        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-
+  @Override
+  public void onSessionInactive(UaSession session) {
+    logger.info("inactive session id: {}", session.getSessionId());
+    BiConsumer<Boolean, Throwable> consumer = listener.get();
+    if (consumer != null) {
+      consumer.accept(Boolean.FALSE, null);
     }
+  }
 
-    public CompletableFuture<UaClient> disconnect() {
-        return getClient().thenCompose(c -> c.disconnect());
+  public CompletableFuture<BrowseResult> getHierarchicalReferences(ExpandedNodeId node) {
+    if (!node.isLocal()) {
+      return buildCompleteExceptionally(BrowseResult.class, new Exception("invalid node index: " + node));
     }
+    return getHierarchicalReferences(node.local().get());
+  }
 
-    public CompletableFuture<Tuple2<ServerState, ZonedDateTime>> readServerStateAndTime() {
-        List<NodeId> nodeIds = Lists.newArrayList(Identifiers.Server_ServerStatus_State, Identifiers.Server_ServerStatus_CurrentTime);
-        return getClient().thenCompose(c -> c.readValues(0.0, TimestampsToReturn.Both, nodeIds))
-                .thenApply(values -> new Tuple2<ServerState, ZonedDateTime>(ServerState.from((Integer) values.get(0).getValue().getValue()),
-                        OpcUaConverter.toZonedDateTime((DateTime) values.get(1).getValue().getValue())));
-    }
+  public CompletableFuture<BrowseResult> getHierarchicalReferences(NodeId node) {
+    UInteger nodeClassMask = uint(NodeClass.Object.getValue() | NodeClass.Variable.getValue());
+    UInteger resultMask = uint(BrowseResultMask.All.getValue());
+    BrowseDescription bd = new BrowseDescription(node, BrowseDirection.Forward, Identifiers.HierarchicalReferences, true, nodeClassMask, resultMask);
+    return browse(bd);
+  }
 
-    public CompletableFuture<ServerState> readServerState() {
-        List<NodeId> nodeIds = Collections.singletonList(Identifiers.Server_ServerStatus_State);
-        return getClient().thenCompose(c -> c.readValues(0.0, TimestampsToReturn.Both, nodeIds))
-                .thenApply(values -> ServerState.from((Integer) values.get(0).getValue().getValue()));
-    }
+  public ReferenceDescription getRootNode(String displayName) {
+    return new ReferenceDescription(Identifiers.RootFolder, Boolean.TRUE, Identifiers.RootFolder.expanded(), QualifiedName.parse("Root"),
+        LocalizedText.english(displayName), NodeClass.Unspecified, ExpandedNodeId.NULL_VALUE);
+  }
 
-    @Override
-    public void onSessionActive(UaSession session) {
-        logger.info("active session id: {}", session.getSessionId());
-        BiConsumer<Boolean, Throwable> consumer = listener.get();
-        if (consumer != null) {
-            consumer.accept(Boolean.TRUE, null);
-        }
-    }
+  public CompletableFuture<BrowseResult> browse(BrowseDescription nodeToBrowse) {
+    return getClient().thenCompose(c -> c.browse(nodeToBrowse));
+  }
 
-    @Override
-    public void onSessionInactive(UaSession session) {
-        logger.info("inactive session id: {}", session.getSessionId());
-        BiConsumer<Boolean, Throwable> consumer = listener.get();
-        if (consumer != null) {
-            consumer.accept(Boolean.FALSE, null);
-        }
-    }
+  public CompletableFuture<List<DataValue>> read(NodeId node, AttributeId attr) {
+    return getClient().thenCompose(c -> c.read(0.0, TimestampsToReturn.Both, Collections.singletonList(node), Collections.singletonList(attr.uid())));
+  }
 
-    public CompletableFuture<BrowseResult> getHierarchicalReferences(ExpandedNodeId node) {
-        if (!node.isLocal()) {
-            CompletableFuture<BrowseResult> f = new CompletableFuture<>();
-            f.completeExceptionally(new Exception("invalid node index: " + node));
-            return f;
-        }
-        return getHierarchicalReferences(node.local().get());
-    }
+  public CompletableFuture<List<DataValue>> read(NodeId node, List<UInteger> attr) {
+    List<NodeId> nodes = attr.stream().map(a -> node).collect(Collectors.toList());
+    return getClient().thenCompose(c -> c.read(0.0, TimestampsToReturn.Both, nodes, attr));
+  }
 
-    public CompletableFuture<BrowseResult> getHierarchicalReferences(NodeId node) {
-        UInteger nodeClassMask = uint(NodeClass.Object.getValue() | NodeClass.Variable.getValue());
-        UInteger resultMask = uint(BrowseResultMask.All.getValue());
-        BrowseDescription bd = new BrowseDescription(node, BrowseDirection.Forward, Identifiers.HierarchicalReferences, true, nodeClassMask, resultMask);
-        return browse(bd);
-    }
+  public CompletableFuture<List<DataValue>> readValues(List<NodeId> nodeIds) {
+    return getClient().thenCompose(c -> c.readValues(0.0, TimestampsToReturn.Both, nodeIds));
+  }
 
-    public ReferenceDescription getRootNode(String displayName) {
-        return new ReferenceDescription(Identifiers.RootFolder, Boolean.TRUE, Identifiers.RootFolder.expanded(), QualifiedName.parse("Root"),
-                LocalizedText.english(displayName), NodeClass.Unspecified, ExpandedNodeId.NULL_VALUE);
-    }
+  public CompletableFuture<StatusCode> write(WriteValue value) {
+    return getClient().thenCompose(c -> c.write(Collections.singletonList(value)).thenApply(WriteResponse::getResults).thenApply(d -> d[0]));
+  }
 
-    public CompletableFuture<BrowseResult> browse(BrowseDescription nodeToBrowse) {
-        return getClient().thenCompose(c -> c.browse(nodeToBrowse));
-    }
+  public CompletableFuture<StatusCode> writeValue(NodeId node, DataValue value) {
+    return getClient().thenCompose(c -> c.writeValues(Collections.singletonList(node), Collections.singletonList(value)).thenApply(d -> d.get(0)));
+  }
 
-    public CompletableFuture<List<DataValue>> read(NodeId node, AttributeId attr) {
-        return getClient().thenCompose(c -> c.read(0.0, TimestampsToReturn.Both, Collections.singletonList(node), Collections.singletonList(attr.uid())));
+  @PreDestroy
+  public void shutdown() {
+    if (client.get() != null) {
+      try {
+        client.get().disconnect().get(500, TimeUnit.MILLISECONDS);
+      } catch (TimeoutException | InterruptedException | ExecutionException e) {
+        logger.error(e.getMessage(), e);
+      }
     }
+    Stack.releaseSharedResources(500, TimeUnit.MILLISECONDS);
+  }
 
-    public CompletableFuture<List<DataValue>> read(NodeId node, List<UInteger> attr) {
-        List<NodeId> nodes = attr.stream().map(a -> node).collect(Collectors.toList());
-        return getClient().thenCompose(c -> c.read(0.0, TimestampsToReturn.Both, nodes, attr));
-    }
+  private EndpointDescription changeEndpointUrl(EndpointDescription e, String url) {
+    return new EndpointDescription(url, e.getServer(), e.getServerCertificate(), e.getSecurityMode(), e.getSecurityPolicyUri(), e.getUserIdentityTokens(),
+        e.getTransportProfileUri(), e.getSecurityLevel());
+  }
 
-    public CompletableFuture<List<DataValue>> readValues(List<NodeId> nodeIds) {
-        return getClient().thenCompose(c -> c.readValues(0.0, TimestampsToReturn.Both, nodeIds));
-    }
-
-    public CompletableFuture<StatusCode> write(WriteValue value) {
-        return getClient().thenCompose(c -> c.write(Collections.singletonList(value)).thenApply(WriteResponse::getResults).thenApply(d -> d[0]));
-    }
-
-    public CompletableFuture<StatusCode> writeValue(NodeId node, DataValue value) {
-        return getClient().thenCompose(c -> c.writeValues(Collections.singletonList(node), Collections.singletonList(value)).thenApply(d -> d.get(0)));
-    }
-
-    @PreDestroy
-    public void shutdown() {
-        if (client.get() != null) {
-            try {
-                client.get().disconnect().get(500, TimeUnit.MILLISECONDS);
-            } catch (TimeoutException | InterruptedException | ExecutionException e) {
-                logger.error(e.getMessage(), e);
-            }
-        }
-        Stack.releaseSharedResources(500, TimeUnit.MILLISECONDS);
-    }
-
-    private EndpointDescription changeEndpointUrl(EndpointDescription e, String url) {
-        return new EndpointDescription(url, e.getServer(), e.getServerCertificate(), e.getSecurityMode(), e.getSecurityPolicyUri(), e.getUserIdentityTokens(),
-                e.getTransportProfileUri(), e.getSecurityLevel());
-    }
-
-    private <T> CompletableFuture<T> buildCompleteExceptionally(Class<T> cl, Throwable th) {
-        CompletableFuture<T> cf = new CompletableFuture<>();
-        cf.completeExceptionally(th);
-        return cf;
-    }
+  private <T> CompletableFuture<T> buildCompleteExceptionally(Class<T> cl, Throwable th) {
+    CompletableFuture<T> cf = new CompletableFuture<>();
+    cf.completeExceptionally(th);
+    return cf;
+  }
 
 }

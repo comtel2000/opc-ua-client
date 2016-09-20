@@ -1,17 +1,15 @@
 /*******************************************************************************
  * Copyright (c) 2016 comtel2000
  *
- * Licensed under the Apache License, version 2.0 (the "License"); 
- * you may not use this file except in compliance with the License. 
- * You may obtain a copy of the License at:
+ * Licensed under the Apache License, version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at:
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  *******************************************************************************/
 package org.comtel2000.opcua.client.service;
 
@@ -91,8 +89,7 @@ public class PersistenceService {
    * @see org.comtel2000.guice.module.PreferenceContext
    */
   public PersistenceService(Class<?> c, Root pref) {
-    this(pref == Root.USER ? Preferences.userNodeForPackage(c)
-        : Preferences.systemNodeForPackage(c));
+    this(pref == Root.USER ? Preferences.userNodeForPackage(c) : Preferences.systemNodeForPackage(c));
   }
 
   @PreDestroy
@@ -131,8 +128,7 @@ public class PersistenceService {
 
     byte[] value = prefs.getByteArray(validateKey(key), null);
     if (value != null && value.length > 0) {
-      try (ObjectInputStream stream =
-          new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(value)))) {
+      try (ObjectInputStream stream = new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(value)))) {
         property.set((T) stream.readObject());
       } catch (Exception e) {
         prefs.remove(key);
@@ -337,7 +333,7 @@ public class PersistenceService {
      * 
      * @return node tree from class package
      */
-    public Class<?>tree() default PersistenceService.class;
+    public Class<?> tree() default PersistenceService.class;
 
     /**
      * Select the preference root tree
@@ -354,7 +350,8 @@ public class PersistenceService {
      */
     public enum Root {
       /** use the user's preference tree */
-      USER, /** use the system preference tree */
+      USER,
+      /** use the system preference tree */
       SYSTEM
     }
 

@@ -24,14 +24,13 @@ import javafx.scene.control.TreeTableColumn;
 import javafx.scene.shape.Rectangle;
 import javafx.util.Callback;
 
-public class DataTreeNodeCellFactory implements
-    Callback<TreeTableColumn<ReferenceDescription, ReferenceDescription>, TreeTableCell<ReferenceDescription, ReferenceDescription>> {
+public class DataTreeNodeCellFactory
+    implements Callback<TreeTableColumn<ReferenceDescription, ReferenceDescription>, TreeTableCell<ReferenceDescription, ReferenceDescription>> {
 
   protected final static Logger logger = LoggerFactory.getLogger(DataTreeNodeCellFactory.class);
 
   @Override
-  public TreeTableCell<ReferenceDescription, ReferenceDescription> call(
-      TreeTableColumn<ReferenceDescription, ReferenceDescription> param) {
+  public TreeTableCell<ReferenceDescription, ReferenceDescription> call(TreeTableColumn<ReferenceDescription, ReferenceDescription> param) {
     return new TreeTableCell<ReferenceDescription, ReferenceDescription>() {
 
       @Override

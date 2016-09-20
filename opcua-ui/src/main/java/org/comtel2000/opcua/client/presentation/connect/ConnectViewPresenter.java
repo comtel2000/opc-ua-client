@@ -16,7 +16,6 @@ package org.comtel2000.opcua.client.presentation.connect;
 import java.net.URL;
 import java.util.Optional;
 import java.util.ResourceBundle;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -78,7 +77,7 @@ public class ConnectViewPresenter implements Initializable {
 
   @FXML
   private RadioMenuItem securityItem;
-  
+
   @FXML
   private MenuItem aboutItem;
 
@@ -91,11 +90,11 @@ public class ConnectViewPresenter implements Initializable {
 
   @FXML
   private ToggleButton security;
-  
+
 
   @FXML
   private HBox securityPane;
-  
+
   @FXML
   Button connectButton;
 
@@ -110,7 +109,7 @@ public class ConnectViewPresenter implements Initializable {
 
   @FXML
   private CheckBox anonymous;
-  
+
   private ResourceBundle resource;
 
   protected static Executor FX_PLATFORM_EXECUTOR = Platform::runLater;
@@ -127,12 +126,12 @@ public class ConnectViewPresenter implements Initializable {
 
     session.bind(user.textProperty(), "user");
     session.bind(password.textProperty(), "password");
-    
+
     user.disableProperty().bind(connectButton.disabledProperty().or(anonymous.selectedProperty()));
     password.disableProperty().bind(connectButton.disabledProperty().or(anonymous.selectedProperty()));
     anonymous.disableProperty().bind(connectButton.disabledProperty());
-    
-    anonymous.selectedProperty().addListener((l, a, b) -> connection.setIdentityProvider(b ? null: new UsernameProvider(user.getText(), password.getText())));
+
+    anonymous.selectedProperty().addListener((l, a, b) -> connection.setIdentityProvider(b ? null : new UsernameProvider(user.getText(), password.getText())));
     anonymous.setSelected(true);
     session.bind(anonymous.selectedProperty(), "anonymous");
     if (address.getItems().isEmpty()) {
@@ -148,26 +147,18 @@ public class ConnectViewPresenter implements Initializable {
     updateAddressHistory();
 
     state.connectedProperty()
-        .addListener(
-            (l, a, b) -> state.statusTextProperty()
-                .set(b
-                    ? String.format("connected to: [%s]",
-                        connection.getEndpointDescription().map(EndpointDescription::getServer)
-                            .map(ApplicationDescription::getApplicationName)
-                            .map(LocalizedText::getText).orElse(addressUrl.get()))
-                    : "disconnected"));
+        .addListener((l, a, b) -> state.statusTextProperty()
+            .set(b ? String.format("connected to: [%s]", connection.getEndpointDescription().map(EndpointDescription::getServer)
+                .map(ApplicationDescription::getApplicationName).map(LocalizedText::getText).orElse(addressUrl.get())) : "disconnected"));
 
     address.disableProperty().bind(state.connectedProperty().or(state.progressVisibleProperty()));
-    connectButton.disableProperty()
-        .bind(state.connectedProperty().or(state.progressVisibleProperty()));
-    disconnectButton.disableProperty()
-        .bind(state.connectedProperty().not().or(state.progressVisibleProperty()));
+    connectButton.disableProperty().bind(state.connectedProperty().or(state.progressVisibleProperty()));
+    disconnectButton.disableProperty().bind(state.connectedProperty().not().or(state.progressVisibleProperty()));
 
     connectItem.disableProperty().bind(connectButton.disabledProperty());
     disconnectItem.disableProperty().bind(disconnectButton.disabledProperty());
 
-    connection
-        .onConnectionChanged((b, t) -> Platform.runLater(() -> state.connectedProperty().set(b)));
+    connection.onConnectionChanged((b, t) -> Platform.runLater(() -> state.connectedProperty().set(b)));
 
     securityItem.selectedProperty().bindBidirectional(security.selectedProperty());
     securityPane.visibleProperty().bind(security.selectedProperty());
@@ -182,26 +173,26 @@ public class ConnectViewPresenter implements Initializable {
     addressUrl.set(address.getSelectionModel().getSelectedItem());
     logger.debug("try to open url: {}", addressUrl.get());
     connection.getEndpoints(addressUrl.get()).thenCompose(endpoints -> {
-          EndpointDescription endpoint = connection.findLowestEndpoint(endpoints).orElseThrow(() -> new CompletionException(new Exception("no endpoint found: " + addressUrl.get())));
-          return connection.connect(addressUrl.get(), endpoint);
-        }).whenCompleteAsync((c, ex) -> {
-          state.progressVisibleProperty().set(false);
-          if (ex != null) {
-            state.statusTextProperty().set(ex.getMessage());
-            logger.error(ex.getMessage(), ex);
-          } else {
-            readHierarchy();
-            updateAddressHistory();
-          }
-        }, FX_PLATFORM_EXECUTOR);
+      EndpointDescription endpoint =
+          connection.findLowestEndpoint(endpoints).orElseThrow(() -> new CompletionException(new Exception("no endpoint found: " + addressUrl.get())));
+      return connection.connect(addressUrl.get(), endpoint);
+    }).whenCompleteAsync((c, ex) -> {
+      state.progressVisibleProperty().set(false);
+      if (ex != null) {
+        state.statusTextProperty().set(ex.getMessage());
+        logger.error(ex.getMessage(), ex);
+      } else {
+        readHierarchy();
+        updateAddressHistory();
+      }
+    }, FX_PLATFORM_EXECUTOR);
   }
 
   @FXML
   void disconnect() {
     state.progressVisibleProperty().set(true);
     Executors.newSingleThreadExecutor().execute(() -> {
-      connection.disconnect().thenAcceptAsync(c -> state.progressVisibleProperty().set(false),
-          FX_PLATFORM_EXECUTOR);
+      connection.disconnect().thenAcceptAsync(c -> state.progressVisibleProperty().set(false), FX_PLATFORM_EXECUTOR);
     });
   }
 
@@ -209,13 +200,10 @@ public class ConnectViewPresenter implements Initializable {
   void about() {
     Alert info = new Alert(AlertType.INFORMATION);
     info.setTitle(resource.getString("connect.about"));
-    Optional<String> version =
-        Optional.ofNullable(ConnectViewPresenter.class.getPackage().getImplementationVersion());
+    Optional<String> version = Optional.ofNullable(ConnectViewPresenter.class.getPackage().getImplementationVersion());
     info.setHeaderText(String.format(resource.getString("about.header"), version.orElse("DEV")));
-    info.setContentText(
-        String.format(resource.getString("about.text"), System.getProperty("java.runtime.version"),
-            System.getProperty("java.vendor"), System.getProperty("os.name"),
-            System.getProperty("os.arch"), System.getProperty("os.version")));
+    info.setContentText(String.format(resource.getString("about.text"), System.getProperty("java.runtime.version"), System.getProperty("java.vendor"),
+        System.getProperty("os.name"), System.getProperty("os.arch"), System.getProperty("os.version")));
     info.show();
   }
 
@@ -241,8 +229,8 @@ public class ConnectViewPresenter implements Initializable {
   }
 
   private void readHierarchy() {
-    DataTreeNode root = new DataTreeNode(connection, connection.getRootNode(
-        connection.getEndpointDescription().map(EndpointDescription::getEndpointUrl).orElse("-")));
+    DataTreeNode root =
+        new DataTreeNode(connection, connection.getRootNode(connection.getEndpointDescription().map(EndpointDescription::getEndpointUrl).orElse("-")));
     state.rootNodeProperty().set(root);
     root.setExpanded(true);
   }

@@ -18,15 +18,15 @@
    <contextMenu>
       <ContextMenu>
         <items>
-          <MenuItem fx:id="monitorItem" mnemonicParsing="false" onAction="#monitorItem" text="%datatree.monitor">
-               <accelerator>
-                  <KeyCodeCombination alt="UP" code="M" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
-               </accelerator></MenuItem>
             <MenuItem fx:id="copyItem" mnemonicParsing="false" onAction="#copyValue" text="%datatree.copy">
                <accelerator>
                   <KeyCodeCombination alt="UP" code="C" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
                </accelerator>
             </MenuItem>
+          <MenuItem fx:id="monitorItem" mnemonicParsing="false" onAction="#monitorItem" text="%datatree.monitor">
+               <accelerator>
+                  <KeyCodeCombination alt="UP" code="M" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+               </accelerator></MenuItem>
         </items>
       </ContextMenu>
    </contextMenu>

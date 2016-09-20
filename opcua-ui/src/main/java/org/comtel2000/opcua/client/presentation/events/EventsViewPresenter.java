@@ -59,7 +59,7 @@ import javafx.stage.FileChooser.ExtensionFilter;
 public class EventsViewPresenter implements Initializable {
 
   private final static Logger logger = LoggerFactory.getLogger(EventsViewPresenter.class);
-  
+
   @Inject
   OpcUaClientConnector connection;
 
@@ -116,21 +116,17 @@ public class EventsViewPresenter implements Initializable {
   public void initialize(URL url, ResourceBundle rb) {
     this.rb = rb;
     id.setCellValueFactory(p -> new ReadOnlyStringWrapper(
-        String.format("%s (%s)", p.getValue().getSubscription().getSubscriptionId(),
-            p.getValue().getMonitoredItem().getMonitoredItemId())));
+        String.format("%s (%s)", p.getValue().getSubscription().getSubscriptionId(), p.getValue().getMonitoredItem().getMonitoredItemId())));
 
-    mode.setCellValueFactory(p -> new ReadOnlyStringWrapper(
-        p.getValue().getMonitoredItem().getMonitoringMode().toString()));
+    mode.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getMonitoredItem().getMonitoringMode().toString()));
 
     variable.setCellValueFactory(p -> p.getValue().nameProperty());
 
     value.setCellValueFactory(p -> p.getValue().valueProperty());
 
-    samplingrate.setCellValueFactory(p -> new ReadOnlyObjectWrapper<Double>(
-        p.getValue().getSubscription().getRevisedPublishingInterval()));
+    samplingrate.setCellValueFactory(p -> new ReadOnlyObjectWrapper<Double>(p.getValue().getSubscription().getRevisedPublishingInterval()));
 
-    quality.setCellValueFactory(p -> new ReadOnlyStringWrapper(
-        OpcUaConverter.toString(p.getValue().getMonitoredItem().getStatusCode())));
+    quality.setCellValueFactory(p -> new ReadOnlyStringWrapper(OpcUaConverter.toString(p.getValue().getMonitoredItem().getStatusCode())));
 
     timestamp.setCellValueFactory(p -> p.getValue().timestampProperty());
 
@@ -171,20 +167,18 @@ public class EventsViewPresenter implements Initializable {
       }
 
     });
-    state.subscribeTreeItemList()
-        .addListener((ListChangeListener.Change<? extends ReferenceDescription> c) -> {
-          while (c.next()) {
-            if (c.wasAdded()) {
-              c.getAddedSubList().stream().forEach(this::subscribe);
-            }
-          }
-        });
+    state.subscribeTreeItemList().addListener((ListChangeListener.Change<? extends ReferenceDescription> c) -> {
+      while (c.next()) {
+        if (c.wasAdded()) {
+          c.getAddedSubList().stream().forEach(this::subscribe);
+        }
+      }
+    });
     bindContextMenu();
 
     state.connectedProperty().addListener((l, a, b) -> {
       if (b && !monitoredItems.isEmpty()) {
-        List<ReferenceDescription> items = monitoredItems.stream()
-            .map(MonitoredEvent::getReferenceDescription).collect(Collectors.toList());
+        List<ReferenceDescription> items = monitoredItems.stream().map(MonitoredEvent::getReferenceDescription).collect(Collectors.toList());
         monitoredItems.clear();
         subscribe(items);
       }
@@ -287,31 +281,29 @@ public class EventsViewPresenter implements Initializable {
 
   @FXML
   void removeAllItems() {
-    if (!table.isFocused()){
+    if (!table.isFocused()) {
       return;
     }
-    connection.unsubscribeAll().whenCompleteAsync((s, t) -> monitoredItems.clear(),
-        Platform::runLater);
+    connection.unsubscribeAll().whenCompleteAsync((s, t) -> monitoredItems.clear(), Platform::runLater);
   }
 
   @FXML
   void removeItem() {
-    if (!table.isFocused()){
+    if (!table.isFocused()) {
       return;
     }
     MonitoredEvent item = table.getSelectionModel().getSelectedItem();
     if (item == null) {
       return;
     }
-    connection.unsubscribe(item.getSubscription().getSubscriptionId(), item.getMonitoredItem())
-        .whenCompleteAsync((s, t) -> monitoredItems.remove(item), Platform::runLater);
+    connection.unsubscribe(item.getSubscription().getSubscriptionId(), item.getMonitoredItem()).whenCompleteAsync((s, t) -> monitoredItems.remove(item),
+        Platform::runLater);
   }
 
 
   private void exportItems(File file) {
 
-    try (BufferedWriter writer = Files.newBufferedWriter(file.toPath(), StandardOpenOption.CREATE,
-        StandardOpenOption.TRUNCATE_EXISTING)) {
+    try (BufferedWriter writer = Files.newBufferedWriter(file.toPath(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
       XmlEncoder encoder = new XmlEncoder();
       encoder.setOutput(writer);
       monitoredItems.stream().map(MonitoredEvent::getReferenceDescription).forEach(rd -> {
@@ -334,16 +326,15 @@ public class EventsViewPresenter implements Initializable {
 
     List<ReferenceDescription> references = new ArrayList<>();
     try (BufferedReader reader = Files.newBufferedReader(file.toPath())) {
-      reader.lines().filter(l -> l.startsWith("<ReferenceDescription>")).map(StringReader::new)
-          .forEach(r -> {
-            try {
-              XmlDecoder decoder = new XmlDecoder(r);
-              decoder.skipElement();
-              references.add(ReferenceDescription.decode(decoder));
-            } catch (Exception e) {
-              logger.error(e.getMessage(), e);
-            }
-          });
+      reader.lines().filter(l -> l.startsWith("<ReferenceDescription>")).map(StringReader::new).forEach(r -> {
+        try {
+          XmlDecoder decoder = new XmlDecoder(r);
+          decoder.skipElement();
+          references.add(ReferenceDescription.decode(decoder));
+        } catch (Exception e) {
+          logger.error(e.getMessage(), e);
+        }
+      });
     } catch (IOException e) {
       logger.error(e.getMessage(), e);
     }
