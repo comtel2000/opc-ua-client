@@ -35,6 +35,7 @@ import org.comtel2000.opcua.client.service.OpcUaClientConnector;
 import org.comtel2000.opcua.client.service.OpcUaConverter;
 import org.eclipse.milo.opcua.stack.core.serialization.xml.XmlDecoder;
 import org.eclipse.milo.opcua.stack.core.serialization.xml.XmlEncoder;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -186,12 +187,12 @@ public class EventsViewPresenter implements Initializable {
   }
 
   private void subscribe(ReferenceDescription rd) {
-    if (rd == null) {
+    if (rd == null || !rd.getNodeId().isLocal()) {
       return;
     }
     state.subscribeTreeItemList().remove(rd);
     try {
-      connection.subscribe(rd).whenCompleteAsync((s, t) -> {
+      connection.subscribe(rd.getNodeId().local().get()).whenCompleteAsync((s, t) -> {
         if (t != null) {
           logger.error(t.getMessage(), t);
         }
@@ -216,7 +217,8 @@ public class EventsViewPresenter implements Initializable {
     state.subscribeTreeItemList().removeAll(references);
 
     try {
-      connection.subscribe(references).whenCompleteAsync((s, t) -> {
+      List<NodeId> nodes = references.stream().map(ReferenceDescription::getNodeId).map(e -> e.local().get()).collect(Collectors.toList());
+      connection.subscribe(nodes).whenCompleteAsync((s, t) -> {
         if (t != null) {
           logger.error(t.getMessage(), t);
         }
@@ -224,7 +226,6 @@ public class EventsViewPresenter implements Initializable {
           for (int i = 0; i < references.size(); i++) {
             monitoredItems.add(new MonitoredEvent(references.get(i), s.v1, s.v2.get(i)));
           }
-
         }
       }, Platform::runLater);
 
@@ -234,7 +235,6 @@ public class EventsViewPresenter implements Initializable {
   }
 
   private void bindContextMenu() {
-
     showItem.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
     removeItem.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
     removeAllItem.disableProperty().bind(Bindings.isEmpty(table.getItems()));

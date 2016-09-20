@@ -14,13 +14,12 @@
 package org.comtel2000.opcua.client.presentation.datatree;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import org.comtel2000.opcua.client.service.OpcUaClientConnector;
 import org.eclipse.milo.opcua.stack.core.Identifiers;
-import org.eclipse.milo.opcua.stack.core.types.structured.BrowseResult;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,9 +59,15 @@ public class DataTreeNode extends TreeItem<ReferenceDescription> {
       return super.getChildren();
     }
     updated = true;
-    CompletableFuture<BrowseResult> result = connection.getHierarchicalReferences(getValue().getNodeId());
-    result.thenApply(r -> Arrays.stream(r.getReferences()).filter(hasNotifierFilter).map(this::createNode).collect(Collectors.toList()))
-        .whenCompleteAsync(this::updateChildren, Platform::runLater);
+    connection.getHierarchicalReferences(getValue().getNodeId()).thenApply(r -> {
+      if (r.getStatusCode().isGood() && r.getReferences() != null && r.getReferences().length > 0) {
+        return Arrays.stream(r.getReferences()).filter(hasNotifierFilter).map(this::createNode).collect(Collectors.toList());
+      }
+      if (r.getStatusCode().isBad()) {
+        logger.error("getHierarchicalReferences failed with status code: {}", r.getStatusCode());
+      }
+      return Collections.<DataTreeNode>emptyList();
+    }).whenCompleteAsync(this::updateChildren, Platform::runLater);
     return FXCollections.emptyObservableList();
   }
 

@@ -86,7 +86,6 @@ public class PersistenceService {
    * @param c package name
    * @param pref selected preference tree
    * 
-   * @see org.comtel2000.guice.module.PreferenceContext
    */
   public PersistenceService(Class<?> c, Root pref) {
     this(pref == Root.USER ? Preferences.userNodeForPackage(c) : Preferences.systemNodeForPackage(c));

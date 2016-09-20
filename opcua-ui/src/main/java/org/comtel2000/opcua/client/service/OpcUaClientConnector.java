@@ -85,7 +85,7 @@ public class OpcUaClientConnector implements SessionActivityListener {
 
   protected final static Logger logger = LoggerFactory.getLogger(OpcUaClientConnector.class);
 
-  private final double DEFAULT_PUBLISH_INTERVAL = 1000.0;
+  private final double DEFAULT_PUBLISH_INTERVAL = 500.0;
 
   private final AtomicReference<EndpointDescription> endpointDescription = new AtomicReference<>();
 
@@ -99,8 +99,7 @@ public class OpcUaClientConnector implements SessionActivityListener {
 
   private final String name;
 
-
-  private Executor pool = Executors.newCachedThreadPool();
+  private final Executor pool;
 
   public OpcUaClientConnector() {
     this("OPC-UA Client");
@@ -108,8 +107,8 @@ public class OpcUaClientConnector implements SessionActivityListener {
 
   public OpcUaClientConnector(String name) {
     this.name = name;
-    this.pool = Executors.newCachedThreadPool(runnable -> {
-      Thread th = new Thread(runnable);
+    this.pool = Executors.newCachedThreadPool(r -> {
+      Thread th = new Thread(r);
       th.setName("client-connector-" + th.getId());
       th.setDaemon(true);
       return th;
@@ -187,19 +186,19 @@ public class OpcUaClientConnector implements SessionActivityListener {
         uint(maxKeepAliveCount), uint(maxNotifications), UByte.valueOf(prio)));
   }
 
-  public CompletableFuture<Tuple2<UaSubscription, UaMonitoredItem>> subscribe(ReferenceDescription rd) {
-    return subscribe(Collections.singletonList(rd)).thenApply(t -> new Tuple2<>(t.v1, t.v2.get(0)));
+  public CompletableFuture<Tuple2<UaSubscription, UaMonitoredItem>> subscribe(NodeId node) {
+    return subscribe(Collections.singletonList(node)).thenApply(t -> new Tuple2<>(t.v1, t.v2.get(0)));
   }
 
-  public CompletableFuture<Tuple2<UaSubscription, UaMonitoredItem>> subscribe(ReferenceDescription rd, double publishInterval) {
-    return subscribe(Collections.singletonList(rd), publishInterval).thenApply(t -> new Tuple2<>(t.v1, t.v2.get(0)));
+  public CompletableFuture<Tuple2<UaSubscription, UaMonitoredItem>> subscribe(NodeId node, double publishInterval) {
+    return subscribe(Collections.singletonList(node), publishInterval).thenApply(t -> new Tuple2<>(t.v1, t.v2.get(0)));
   }
 
-  public CompletableFuture<Tuple2<UaSubscription, List<UaMonitoredItem>>> subscribe(List<ReferenceDescription> references) {
-    return subscribe(references, DEFAULT_PUBLISH_INTERVAL);
+  public CompletableFuture<Tuple2<UaSubscription, List<UaMonitoredItem>>> subscribe(List<NodeId> nodes) {
+    return subscribe(nodes, DEFAULT_PUBLISH_INTERVAL);
   }
 
-  public CompletableFuture<Tuple2<UaSubscription, List<UaMonitoredItem>>> subscribe(List<ReferenceDescription> references, double publishInterval) {
+  public CompletableFuture<Tuple2<UaSubscription, List<UaMonitoredItem>>> subscribe(List<NodeId> nodes, double publishInterval) {
 
     return getClient().thenApply(c -> {
       UaSubscription subscription =
@@ -213,7 +212,7 @@ public class OpcUaClientConnector implements SessionActivityListener {
             return null;
           });
 
-      List<MonitoredItemCreateRequest> list = references.stream().map(rd -> rd.getNodeId().local().get())
+      List<MonitoredItemCreateRequest> list = nodes.stream()
           .map(node -> new ReadValueId(node, AttributeId.Value.uid(), null, QualifiedName.NULL_VALUE)).map(v -> new MonitoredItemCreateRequest(v,
               MonitoringMode.Reporting, new MonitoringParameters(uint(clientHandles.getAndIncrement()), publishInterval, null, uint(1), true)))
           .collect(Collectors.toList());

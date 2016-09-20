@@ -13,10 +13,8 @@
  *******************************************************************************/
 package org.comtel2000.opcua.client.service;
 
-import java.sql.Date;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;

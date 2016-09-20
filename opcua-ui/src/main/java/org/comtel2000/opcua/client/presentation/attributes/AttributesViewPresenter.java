@@ -45,9 +45,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyCodeCombination;
-import javafx.scene.input.KeyCombination;
 
 public class AttributesViewPresenter implements Initializable {
 
@@ -110,21 +107,10 @@ public class AttributesViewPresenter implements Initializable {
     state.showAttributeItemProperty().addListener((l, a, b) -> updateAttributes(b));
 
     bindContextMenu();
-    // registerKeys();
-
   }
 
   private void bindContextMenu() {
     copyItem.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
-  }
-
-  private void registerKeys() {
-    KeyCombination copyEvent = new KeyCodeCombination(KeyCode.C, KeyCombination.SHORTCUT_DOWN);
-    table.setOnKeyPressed(e -> {
-      if (copyEvent.match(e)) {
-        copyValue();
-      }
-    });
   }
 
   @FXML
