@@ -21,6 +21,11 @@
                <accelerator>
                   <KeyCodeCombination alt="UP" code="C" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
                </accelerator></MenuItem>
+            <MenuItem fx:id="refreshItem" mnemonicParsing="false" onAction="#refresh" text="%attributes.refresh">
+               <accelerator>
+                  <KeyCodeCombination alt="UP" code="R" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+               </accelerator>
+            </MenuItem>
         </items>
       </ContextMenu>
    </contextMenu>

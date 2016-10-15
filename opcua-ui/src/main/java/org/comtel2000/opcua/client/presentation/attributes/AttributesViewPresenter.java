@@ -66,6 +66,9 @@ public class AttributesViewPresenter implements Initializable {
   @FXML
   private MenuItem copyItem;
 
+  @FXML
+  private MenuItem refreshItem;
+  
   private final ObjectProperty<ReferenceDescription> selectedReference = new SimpleObjectProperty<>();
   private final ObjectProperty<DataValue> selectedDataValue = new SimpleObjectProperty<>();
 
@@ -111,6 +114,7 @@ public class AttributesViewPresenter implements Initializable {
 
   private void bindContextMenu() {
     copyItem.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
+    refreshItem.disableProperty().bind(selectedReference.isNull());
   }
 
   @FXML
@@ -127,6 +131,14 @@ public class AttributesViewPresenter implements Initializable {
     }
   }
 
+  @FXML
+  void refresh() {
+    if (!table.isFocused()) {
+      return;
+    }
+    updateAttributes(selectedReference.get());
+  }
+  
   private void updateAttributes(ReferenceDescription b) {
     table.getItems().clear();
     selectedReference.set(b);

@@ -19,14 +19,19 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Enumeration;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.eclipse.milo.opcua.stack.core.Identifiers;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
+import org.eclipse.milo.opcua.stack.core.types.builtin.LocalizedText;
 import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.QualifiedName;
 import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
@@ -98,19 +103,32 @@ public class OpcUaConverter {
     if (variant.getValue() instanceof ExtensionObject) {
       return toString((ExtensionObject) variant.getValue());
     }
-
+    if (variant.getValue() instanceof Object[]) {
+      return toString((Object[]) variant.getValue());
+    }
+    if (variant.getValue() instanceof LocalizedText) {
+      return toString((LocalizedText) variant.getValue());
+    }
     return String.valueOf(variant.getValue());
-
   }
 
+  /**
+   * NodeType to String
+   * 
+   * @param node NodeIdType
+   * @return String representation
+   * 
+   * @see: {@link Identifiers}
+   */
   public static String toDataTypeString(NodeId node) {
     if (node == null || node.isNull()) {
       return null;
     }
     if (node.getIdentifier() == null && !(node.getIdentifier() instanceof UInteger)) {
-      return node.toParseableString();
+      return String.format("%s (%s)", node.getIdentifier(), node.toParseableString());
     }
-    switch (((UInteger) node.getIdentifier()).intValue()) {
+    int id = ((UInteger) node.getIdentifier()).intValue();
+    switch (id) {
       case 1:
         return "Boolean";
       case 2:
@@ -143,12 +161,39 @@ public class OpcUaConverter {
         return "ByteString";
       case 16:
         return "XmlElement";
-
+      case 17:
+        return "NodeId";
+      case 18:
+        return "ExpandedNodeId";
+      case 19:
+        return "StatusCode";
+      case 20:
+        return "QualifiedName";
+      case 21:
+        return "LocalizedText";
+      case 22:
+        return "Structure";
+      case 23:
+        return "DataValue";
+      case 24:
+      case 25:
+        return "BaseDataType";
+      case 26:
+        return "Number";
+      case 27:
+        return "Integer";
+      case 28:
+        return "UInteger";
+      case 29:
+        return "Enumeration";
+      case 30:
+        return "Image";
       default:
-        return node.toParseableString();
+        return String.format("%d (%s)", id, node.toParseableString());
     }
-
   }
+
+
 
   public static Object toWritableDataTypeObject(NodeId node, String value) throws Exception {
     if (node == null || node.isNull()) {
@@ -196,7 +241,31 @@ public class OpcUaConverter {
         return ByteString.of(value.getBytes());
       case 16:
         return XmlElement.of(value);
-
+      case 17:
+        return NodeId.parse(value);
+      case 18:
+        return ExpandedNodeId.parse(value);
+      case 19:
+        if (value != null && value.equalsIgnoreCase("good")) {
+          return StatusCode.GOOD;
+        }
+        return StatusCode.BAD;
+      case 20:
+        return QualifiedName.parse(value);
+      case 21:
+        return LocalizedText.english(value);
+      case 22:
+      case 23:
+      case 24:
+      case 25:
+        return value;
+      case 26:
+      case 27:
+        return Integer.valueOf(value);
+      case 28:
+        return UInteger.valueOf(value);
+      case 29:
+      case 30:
       default:
         return value;
     }
@@ -205,6 +274,10 @@ public class OpcUaConverter {
 
   public static ZonedDateTime toZonedDateTime(DateTime time) {
     return Instant.ofEpochMilli(time.getJavaTime()).atZone(ZoneId.systemDefault());
+  }
+
+  private static String toString(LocalizedText value) {
+    return value.getText();
   }
 
   public static String toString(DateTime time) {
@@ -217,6 +290,10 @@ public class OpcUaConverter {
 
   public static String toString(XmlElement xml) {
     return xml.getFragment();
+  }
+
+  public static String toString(Object[] data) {
+    return Arrays.toString(data);
   }
 
   public static String toString(ExtensionObject ext) {
