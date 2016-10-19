@@ -16,12 +16,11 @@ package org.comtel2000.opcua.client.presentation.datatree;
 import java.io.ByteArrayOutputStream;
 import java.util.HashSet;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.eclipse.milo.opcua.stack.core.serialization.xml.XmlEncoder;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javafx.beans.Observable;
 import javafx.collections.FXCollections;
@@ -43,6 +42,7 @@ public class DataTreeNodeRowFactory<T extends ReferenceDescription> implements C
 
   private final static PseudoClass VARIABLE_CLASS = PseudoClass.getPseudoClass("variable");
   private final static PseudoClass OBJECT_CLASS = PseudoClass.getPseudoClass("object");
+  private final static PseudoClass METHOD_CLASS = PseudoClass.getPseudoClass("method");
 
   private final Callback<TreeTableView<T>, TreeTableRow<T>> callbackFactory;
   private final ObservableSet<T> subscribedItems;
@@ -95,18 +95,25 @@ public class DataTreeNodeRowFactory<T extends ReferenceDescription> implements C
     switch (row.getItem().getNodeClass()) {
       case Variable:
         row.pseudoClassStateChanged(OBJECT_CLASS, false);
+        row.pseudoClassStateChanged(METHOD_CLASS, false);
         row.pseudoClassStateChanged(VARIABLE_CLASS, true);
         break;
       case Object:
         row.pseudoClassStateChanged(VARIABLE_CLASS, false);
+        row.pseudoClassStateChanged(METHOD_CLASS, false);
         row.pseudoClassStateChanged(OBJECT_CLASS, true);
+        break;
+      case Method:
+        row.pseudoClassStateChanged(VARIABLE_CLASS, false);
+        row.pseudoClassStateChanged(OBJECT_CLASS, false);
+        row.pseudoClassStateChanged(METHOD_CLASS, true);
         break;
       default:
         row.pseudoClassStateChanged(VARIABLE_CLASS, false);
+        row.pseudoClassStateChanged(METHOD_CLASS, false);
         row.pseudoClassStateChanged(OBJECT_CLASS, false);
         break;
     }
-
   }
 
 }

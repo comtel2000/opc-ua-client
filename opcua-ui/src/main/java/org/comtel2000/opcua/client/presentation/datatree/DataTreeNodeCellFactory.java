@@ -13,10 +13,10 @@
  *******************************************************************************/
 package org.comtel2000.opcua.client.presentation.datatree;
 
+import org.eclipse.milo.opcua.stack.core.Identifiers;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 
 import javafx.scene.Node;
 import javafx.scene.control.TreeTableCell;
@@ -49,7 +49,23 @@ public class DataTreeNodeCellFactory
 
   private Node createGraphicNode(ReferenceDescription rd) {
     Rectangle rect = new Rectangle(4, 4, 8, 8);
-    rect.getStyleClass().add("tree-icon-" + rd.getNodeClass().toString().toLowerCase());
+    setStyle(rect, rd);
     return rect;
+  }
+
+  private void setStyle(Node node, ReferenceDescription rd) {
+    node.getStyleClass().add("tree-icon-" + rd.getNodeClass().toString().toLowerCase());
+    if (rd.getTypeDefinition() == null || rd.getTypeDefinition().getIdentifier() == null) {
+      return;
+    }
+    if (Identifiers.PropertyType.getIdentifier().equals(rd.getTypeDefinition().getIdentifier())) {
+      node.getStyleClass().add("tree-icon-property");
+    } else if (Identifiers.FolderType.getIdentifier().equals(rd.getTypeDefinition().getIdentifier())) {
+      node.getStyleClass().add("tree-icon-folder");
+    } else if (Identifiers.BaseObjectType.getIdentifier().equals(rd.getTypeDefinition().getIdentifier())) {
+      node.getStyleClass().add("tree-icon-baseobject");
+    } else if (Identifiers.AnalogItemType.getIdentifier().equals(rd.getTypeDefinition().getIdentifier())) {
+      node.getStyleClass().add("tree-icon-analogitem");
+    }
   }
 }

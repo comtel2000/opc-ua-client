@@ -19,13 +19,11 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.Enumeration;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.eclipse.milo.opcua.stack.core.Identifiers;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
-import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExtensionObject;
@@ -38,6 +36,9 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 public class OpcUaConverter {
 
@@ -285,9 +286,23 @@ public class OpcUaConverter {
   }
 
   public static String toString(ByteString bs) {
-    return bs.bytes() != null ? new String(bs.bytes()) : bs.toString();
+    return bs.bytes() != null ? Arrays.toString(bs.bytes()) : bs.toString();
   }
 
+  public static String toRangeString(ByteString bs) {
+    if (bs == null || bs.bytes() == null || bs.bytes().length != 16) {
+      return "Range [unknown]";
+    }
+    ByteBuf range = Unpooled.wrappedBuffer(bs.bytes()).order(Unpooled.LITTLE_ENDIAN);
+    double low = range.readDouble();
+    double  high = range.readDouble();
+    return String.format("Range [%s, %s]", toString(low), toString(high));
+  }
+  
+  public static String toString(double d) {
+    return d % 1.0 != 0 ? String.format("%s", d) : String.format("%.0f",d);
+  }
+  
   public static String toString(XmlElement xml) {
     return xml.getFragment();
   }
@@ -297,6 +312,9 @@ public class OpcUaConverter {
   }
 
   public static String toString(ExtensionObject ext) {
+    if (ext.getEncodingTypeId() != null && Identifiers.Range_Encoding_DefaultBinary.getIdentifier().equals(ext.getEncodingTypeId().getIdentifier())){
+      return toRangeString((ByteString) ext.getEncoded());
+    }
     if (ext.getEncoded() != null && ext.getEncoded() instanceof ByteString) {
       return toString((ByteString) ext.getEncoded());
     }

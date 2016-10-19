@@ -44,13 +44,41 @@
 		<slf4j.version>1.7.21</slf4j.version>
 		<milo.version>0.1.0-SNAPSHOT</milo.version>
 	</properties>
-	
+
 	<profiles>
 		<profile>
 			<id>default</id>
 			<activation>
 				<activeByDefault>true</activeByDefault>
 			</activation>
+		</profile>
+		<profile>
+			<id>generate-dependencies</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-dependency-plugin</artifactId>
+						<version>2.10</version>
+						<executions>
+							<execution>
+								<id>copy-dependencies</id>
+								<phase>package</phase>
+								<goals>
+									<goal>copy-dependencies</goal>
+								</goals>
+								<configuration>
+									<outputDirectory>${project.build.directory}/libs</outputDirectory>
+									<overWriteReleases>false</overWriteReleases>
+									<overWriteSnapshots>true</overWriteSnapshots>
+									<overWriteIfNewer>true</overWriteIfNewer>
+									<excludeTransitive>false</excludeTransitive>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
 		</profile>
 		<profile>
 			<id>ossrh</id>
@@ -115,19 +143,19 @@
 			</build>
 		</profile>
 	</profiles>
-	
+
 	<scm>
 		<url>https://github.com/comtel2000/opc-ua-client</url>
 		<connection>scm:git:git@github.com:comtel2000/opc-ua-client.git</connection>
 		<developerConnection>scm:git:git@github.com:comtel2000/opc-ua-client.git</developerConnection>
 		<tag>HEAD</tag>
 	</scm>
-	
+
 	<ciManagement>
 		<system>Travis CI</system>
 		<url>https://travis-ci.org/comtel2000/opc-ua-client/</url>
 	</ciManagement>
-	
+
 	<issueManagement>
 		<system>GitHub</system>
 		<url>https://github.com/comtel2000/opc-ua-client/issues</url>

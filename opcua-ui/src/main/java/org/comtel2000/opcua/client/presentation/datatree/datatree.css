@@ -5,8 +5,16 @@
 	-fx-fill: black;
 }
 
+.tree-table-row-cell:selected .text{
+	-fx-fill: white;
+}
+
 .tree-table-row-cell:subscribed .text{
 	-fx-fill: red;
+}
+
+.tree-table-view {
+	-fx-fixed-cell-size: 24px;
 }
 
 .tree-table-view .tree-icon-pane {
@@ -34,4 +42,25 @@
 
 .tree-table-view .tree-icon-method {
 	-fx-fill: red;
+}
+
+
+.tree-table-view .tree-icon-property {
+	-fx-fill: #4C4CFF;
+}
+
+.tree-table-view .tree-icon-folder {
+	-fx-stroke: -fx-text-base-color;
+	-fx-stroke-width: 2.0;
+	-fx-fill: gray;
+}
+
+.tree-table-view .tree-icon-baseobject {
+	-fx-stroke: -fx-text-base-color;
+	-fx-stroke-width: 2.0;
+	-fx-fill: darkgray;
+}
+
+.tree-table-view .tree-icon-analogitem {
+	-fx-fill: darkgreen;
 }

@@ -21,7 +21,6 @@ import org.comtel2000.opcua.client.service.OpcUaConverter;
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaMonitoredItem;
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaSubscription;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
-import org.eclipse.milo.opcua.stack.core.types.builtin.StatusCode;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 
 import javafx.beans.property.ReadOnlyStringProperty;
@@ -44,13 +43,20 @@ public class MonitoredEvent implements Consumer<DataValue> {
     this.subsciption = Objects.requireNonNull(subsciption);
     this.item = Objects.requireNonNull(item);
     this.item.setValueConsumer(this);
+    updateItemStatus();
+  }
+
+  private void updateItemStatus() {
+    if (!item.getStatusCode().isGood()){
+      lasterrorProperty().set(item.getStatusCode().toString());
+    }
   }
 
   @Override
   public void accept(DataValue v) {
     timestampProperty().set(DateTimeFormatter.ISO_LOCAL_TIME.format(OpcUaConverter.toZonedDateTime(v.getSourceTime())));
     valueProperty().set(OpcUaConverter.toString(v.getValue()));
-    if (v.getStatusCode() != StatusCode.GOOD) {
+    if (!v.getStatusCode().isGood()) {
       lasterrorProperty().set(v.getStatusCode().toString());
     }
   }

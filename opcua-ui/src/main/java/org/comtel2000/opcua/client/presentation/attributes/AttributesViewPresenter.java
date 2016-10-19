@@ -14,7 +14,11 @@
 package org.comtel2000.opcua.client.presentation.attributes;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 import javax.inject.Inject;
@@ -68,7 +72,7 @@ public class AttributesViewPresenter implements Initializable {
 
   @FXML
   private MenuItem refreshItem;
-  
+
   private final ObjectProperty<ReferenceDescription> selectedReference = new SimpleObjectProperty<>();
   private final ObjectProperty<DataValue> selectedDataValue = new SimpleObjectProperty<>();
 
@@ -138,68 +142,72 @@ public class AttributesViewPresenter implements Initializable {
     }
     updateAttributes(selectedReference.get());
   }
-  
-  private void updateAttributes(ReferenceDescription b) {
+
+  private void updateAttributes(final ReferenceDescription b) {
     table.getItems().clear();
     selectedReference.set(b);
     selectedDataValue.set(null);
     if (b == null) {
       return;
     }
-    table.getItems().add(AttributeItem.get("DisplayName", b.getDisplayName().getText()));
-    table.getItems().add(AttributeItem.get("BrowseName", b.getBrowseName().toParseableString()));
-    table.getItems().add(AttributeItem.get("NodeId", b.getNodeId().toParseableString()));
-    table.getItems().add(AttributeItem.get("NodeClass", String.valueOf(b.getNodeClass())));
-    table.getItems().add(AttributeItem.get("ReferenceType", b.getReferenceTypeId().toParseableString()));
-    table.getItems().add(AttributeItem.get("Forward", String.valueOf(b.getIsForward())));
-    table.getItems().add(AttributeItem.get("TypeId", b.getTypeId().toParseableString()));
-    table.getItems().add(AttributeItem.get("TypeDefinition", b.getTypeDefinition().toParseableString()));
 
-    if (b.getNodeId().isLocal() && b.getNodeClass() == NodeClass.Variable) {
-      connection
-          .read(b.getNodeId().local().get(),
-              Lists.newArrayList(AttributeId.Description.uid(), AttributeId.AccessLevel.uid(), AttributeId.UserAccessLevel.uid(), AttributeId.Value.uid()))
-          .whenComplete((d, t) -> {
-            if (t != null) {
-              logger.error(t.getMessage(), t);
-              return;
-            }
-            if (d.size() > 3) {
-              DataValue descr = d.get(0);
-              table.getItems().add(AttributeItem.get("Description", OpcUaConverter.toString(descr.getValue())));
-
-              DataValue accessLevel = d.get(1);
-              EnumSet<AccessLevel> level = OpcUaConverter.AccessLevel.fromMask((UByte) accessLevel.getValue().getValue());
-              table.getItems().add(AttributeItem.get("AccessLevel", OpcUaConverter.toString(level)));
-              DataValue userAccessLevel = d.get(2);
-              EnumSet<AccessLevel> userLevel = OpcUaConverter.AccessLevel.fromMask((UByte) userAccessLevel.getValue().getValue());
-              table.getItems().add(AttributeItem.get("UserAccessLevel", OpcUaConverter.toString(userLevel)));
-
-              DataValue value = d.get(3);
-              selectedDataValue.set(value);
-              table.getItems()
-                  .add(AttributeItem.get("Value", OpcUaConverter.toString(value.getValue()), level.contains(AccessLevel.CurrentWrite) && isSupported(value)));
-              if (value.getValue().getDataType().isPresent()) {
-                table.getItems().add(AttributeItem.get("Value (DataType)", OpcUaConverter.toDataTypeString(value.getValue().getDataType().get())));
-              }
-              if (value.getSourceTime() != null) {
-                table.getItems().add(AttributeItem.get("Value (SourceTime)", OpcUaConverter.toString(value.getSourceTime())));
-              }
-              if (value.getSourcePicoseconds() != null) {
-                table.getItems().add(AttributeItem.get("Value (SourcePicoseconds)", value.getSourcePicoseconds().toString()));
-              }
-              if (value.getServerTime() != null) {
-                table.getItems().add(AttributeItem.get("Value (ServerTime)", OpcUaConverter.toString(value.getServerTime())));
-              }
-              if (value.getServerPicoseconds() != null) {
-                table.getItems().add(AttributeItem.get("Value (ServerPicoseconds)", value.getServerPicoseconds().toString()));
-              }
-              table.getItems().add(AttributeItem.get("Value (StatusCode)", OpcUaConverter.toString(value.getStatusCode())));
-            }
-          });
+    if (!b.getNodeId().isLocal() || b.getNodeClass() != NodeClass.Variable) {
+      table.getItems().addAll(getAttributes(b));
+      return;
     }
+
+    connection
+        .read(b.getNodeId().local().get(),
+            Lists.newArrayList(AttributeId.Description.uid(), AttributeId.AccessLevel.uid(), AttributeId.UserAccessLevel.uid(), AttributeId.Value.uid()))
+        .thenApply(d -> {
+          List<AttributeItem> additionals = getAttributes(b);
+          if (d.size() < 4) {
+            return additionals;
+          }
+          DataValue descr = d.get(0);
+          additionals.add(AttributeItem.get("Description", OpcUaConverter.toString(descr.getValue())));
+          DataValue accessLevel = d.get(1);
+          EnumSet<AccessLevel> level = OpcUaConverter.AccessLevel.fromMask((UByte) accessLevel.getValue().getValue());
+          additionals.add(AttributeItem.get("AccessLevel", OpcUaConverter.toString(level)));
+          DataValue userAccessLevel = d.get(2);
+          EnumSet<AccessLevel> userLevel = OpcUaConverter.AccessLevel.fromMask((UByte) userAccessLevel.getValue().getValue());
+          additionals.add(AttributeItem.get("UserAccessLevel", OpcUaConverter.toString(userLevel)));
+
+          DataValue value = d.get(3);
+          selectedDataValue.set(value);
+          additionals
+              .add(AttributeItem.get("Value", OpcUaConverter.toString(value.getValue()), level.contains(AccessLevel.CurrentWrite) && isSupported(value)));
+          value.getValue().getDataType().ifPresent(v -> additionals.add(AttributeItem.get("Value (DataType)", OpcUaConverter.toDataTypeString(v))));
+          Optional.ofNullable(value.getSourceTime()).ifPresent(v -> additionals.add(AttributeItem.get("Value (SourceTime)", OpcUaConverter.toString(v))));
+          Optional.ofNullable(value.getSourcePicoseconds()).ifPresent(v -> additionals.add(AttributeItem.get("Value (SourcePicoseconds)", v.toString())));
+          Optional.ofNullable(value.getServerTime()).ifPresent(v -> additionals.add(AttributeItem.get("Value (ServerTime)", OpcUaConverter.toString(v))));
+          Optional.ofNullable(value.getServerPicoseconds()).ifPresent(v -> additionals.add(AttributeItem.get("Value (ServerPicoseconds)", v.toString())));
+          additionals.add(AttributeItem.get("Value (StatusCode)", OpcUaConverter.toString(value.getStatusCode())));
+          return additionals;
+        }).whenCompleteAsync((l, th) -> {
+          if (th != null) {
+            logger.error(th.getMessage(), th);
+          }
+          if (l != null){
+            table.getItems().addAll(l);
+          }
+        }, Platform::runLater);
+
   }
 
+  private List<AttributeItem> getAttributes(ReferenceDescription b){
+    final List<AttributeItem> list = new ArrayList<>();
+    list.add(AttributeItem.get("DisplayName", b.getDisplayName().getText()));
+    list.add(AttributeItem.get("BrowseName", b.getBrowseName().toParseableString()));
+    list.add(AttributeItem.get("NodeId", b.getNodeId().toParseableString()));
+    list.add(AttributeItem.get("NodeClass", String.valueOf(b.getNodeClass())));
+    list.add(AttributeItem.get("ReferenceType", b.getReferenceTypeId().toParseableString()));
+    list.add(AttributeItem.get("Forward", String.valueOf(b.getIsForward())));
+    list.add(AttributeItem.get("TypeId", b.getTypeId().toParseableString()));
+    list.add(AttributeItem.get("TypeDefinition", b.getTypeDefinition().toParseableString()));
+    return list;
+  }
+  
   private boolean isSupported(DataValue value) {
     if (!value.getValue().getDataType().isPresent() || !value.getValue().getDataType().isPresent()) {
       return false;

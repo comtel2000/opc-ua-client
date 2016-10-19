@@ -34,8 +34,8 @@ public class DataTreeNode extends TreeItem<ReferenceDescription> {
 
   protected final static Logger logger = LoggerFactory.getLogger(DataTreeNode.class);
 
-  boolean updated = false;
-  boolean leaf = false;
+  boolean updated;
+  boolean leaf;
 
   final OpcUaClientConnector connection;
 
@@ -46,6 +46,7 @@ public class DataTreeNode extends TreeItem<ReferenceDescription> {
   public DataTreeNode(OpcUaClientConnector c, ReferenceDescription rd) {
     super(rd);
     this.connection = c;
+    leaf = isLeafType(rd);
   }
 
   @Override
@@ -55,7 +56,7 @@ public class DataTreeNode extends TreeItem<ReferenceDescription> {
 
   @Override
   public ObservableList<TreeItem<ReferenceDescription>> getChildren() {
-    if (updated) {
+    if (updated || leaf) {
       return super.getChildren();
     }
     updated = true;
@@ -85,9 +86,25 @@ public class DataTreeNode extends TreeItem<ReferenceDescription> {
     if (!super.getChildren().addAll(list)) {
       fireEvent(new TreeModificationEvent<ReferenceDescription>(valueChangedEvent(), DataTreeNode.this, getValue()));
     }
-
   }
 
+  private static boolean isLeafType(ReferenceDescription rd) {
+    if (rd.getTypeDefinition() == null || rd.getTypeDefinition().getIdentifier() == null) {
+      return false;
+    }
+    Object identifier = rd.getTypeDefinition().getIdentifier();
+    if (Identifiers.PropertyType.getIdentifier() == identifier){
+      return true;
+    }
+    if (Identifiers.BaseDataVariableType.getIdentifier() == identifier){
+      return true;
+    }
+    if (Identifiers.DataItemType.getIdentifier() == identifier){
+      return true;
+    }
+    return false;
+  }
+  
   private DataTreeNode createNode(ReferenceDescription ref) {
     return new DataTreeNode(connection, ref);
   }
