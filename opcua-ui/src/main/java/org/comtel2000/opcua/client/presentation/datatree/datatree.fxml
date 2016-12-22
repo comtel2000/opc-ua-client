@@ -6,28 +6,46 @@
 <?import javafx.scene.control.TreeTableView?>
 <?import javafx.scene.input.KeyCodeCombination?>
 
-<TreeTableView fx:id="tableTree" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" tableMenuButtonVisible="true" xmlns="http://javafx.com/javafx/8.0.60" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.comtel2000.opcua.client.presentation.datatree.DataTreeViewPresenter">
+<TreeTableView fx:id="tableTree" maxHeight="1.7976931348623157E308"
+	maxWidth="1.7976931348623157E308" tableMenuButtonVisible="true"
+	xmlns="http://javafx.com/javafx/8.0.60" xmlns:fx="http://javafx.com/fxml/1"
+	fx:controller="org.comtel2000.opcua.client.presentation.datatree.DataTreeViewPresenter">
 	<columns>
-		<TreeTableColumn fx:id="display" editable="false" minWidth="100.0" prefWidth="250.0" text="%datatree.column.display" />
-		<TreeTableColumn fx:id="browse" editable="false" prefWidth="150.0" text="%datatree.column.browse" />
-		<TreeTableColumn fx:id="node" editable="false" prefWidth="200.0" text="%datatree.column.nodeid" />
+		<TreeTableColumn fx:id="display" editable="false"
+			minWidth="100.0" prefWidth="250.0" text="%datatree.column.display" />
+		<TreeTableColumn fx:id="browse" editable="false"
+			prefWidth="150.0" text="%datatree.column.browse" />
+		<TreeTableColumn fx:id="node" editable="false"
+			prefWidth="200.0" text="%datatree.column.nodeid" />
 	</columns>
 	<columnResizePolicy>
 		<TreeTableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
 	</columnResizePolicy>
-   <contextMenu>
-      <ContextMenu>
-        <items>
-            <MenuItem fx:id="copyItem" mnemonicParsing="false" onAction="#copyValue" text="%datatree.copy">
-               <accelerator>
-                  <KeyCodeCombination alt="UP" code="C" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
-               </accelerator>
-            </MenuItem>
-          <MenuItem fx:id="monitorItem" mnemonicParsing="false" onAction="#monitorItem" text="%datatree.monitor">
-               <accelerator>
-                  <KeyCodeCombination alt="UP" code="M" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
-               </accelerator></MenuItem>
-        </items>
-      </ContextMenu>
-   </contextMenu>
+	<contextMenu>
+		<ContextMenu>
+			<items>
+				<MenuItem fx:id="rebrowseItem" mnemonicParsing="false"
+					onAction="#rebrowse" text="%datatree.rebrowse">
+					<accelerator>
+						<KeyCodeCombination alt="UP" code="R" control="UP"
+							meta="UP" shift="UP" shortcut="DOWN" />
+					</accelerator>
+				</MenuItem>
+				<MenuItem fx:id="monitorItem" mnemonicParsing="false"
+					onAction="#monitorItem" text="%datatree.monitor">
+					<accelerator>
+						<KeyCodeCombination alt="UP" code="M" control="UP"
+							meta="UP" shift="UP" shortcut="DOWN" />
+					</accelerator>
+				</MenuItem>
+				<MenuItem fx:id="copyItem" mnemonicParsing="false"
+					onAction="#copyValue" text="%datatree.copy">
+					<accelerator>
+						<KeyCodeCombination alt="UP" code="C" control="UP"
+							meta="UP" shift="UP" shortcut="DOWN" />
+					</accelerator>
+				</MenuItem>
+			</items>
+		</ContextMenu>
+	</contextMenu>
 </TreeTableView>

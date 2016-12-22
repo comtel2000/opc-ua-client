@@ -1,18 +1,3 @@
-.tree-table-row-cell:variable .text{
-	-fx-fill: black;
-}
-.tree-table-row-cell:object .text{
-	-fx-fill: black;
-}
-
-.tree-table-row-cell:selected .text{
-	-fx-fill: white;
-}
-
-.tree-table-row-cell:subscribed .text{
-	-fx-fill: red;
-}
-
 .tree-table-view {
 	-fx-fixed-cell-size: 24px;
 }

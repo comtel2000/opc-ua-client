@@ -22,12 +22,15 @@ import javax.inject.Inject;
 import org.comtel2000.opcua.client.presentation.binding.StatusBinding;
 import org.comtel2000.opcua.client.service.OpcUaClientConnector;
 import org.eclipse.milo.opcua.stack.core.serialization.xml.XmlEncoder;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.MenuItem;
@@ -63,11 +66,16 @@ public class DataTreeViewPresenter implements Initializable {
   private TreeTableColumn<ReferenceDescription, String> node;
 
   @FXML
+  private MenuItem rebrowseItem;
+  
+  @FXML
   private MenuItem monitorItem;
 
   @FXML
   private MenuItem copyItem;
 
+  private final BooleanProperty variableItem = new SimpleBooleanProperty(false);
+  
   @Override
   public void initialize(URL url, ResourceBundle rb) {
 
@@ -100,10 +108,12 @@ public class DataTreeViewPresenter implements Initializable {
       state.showAttributeItemProperty().set(item.getValue());
     }
     state.selectedTreeItemProperty().set(item != null ? item.getValue() : null);
+    variableItem.set(item != null && item.getValue() != null && item.getValue().getNodeClass() == NodeClass.Variable);
   }
 
   private void bindContextMenu() {
-    monitorItem.disableProperty().bind(state.connectedProperty().not().and(tableTree.getSelectionModel().selectedItemProperty().isNull()));
+    rebrowseItem.disableProperty().bind(state.connectedProperty().not().or(tableTree.getSelectionModel().selectedItemProperty().isNull()));
+    monitorItem.disableProperty().bind(state.connectedProperty().not().or(tableTree.getSelectionModel().selectedItemProperty().isNull()).or(variableItem.not()));
     copyItem.disableProperty().bind(tableTree.getSelectionModel().selectedItemProperty().isNull());
   }
 
@@ -116,6 +126,14 @@ public class DataTreeViewPresenter implements Initializable {
     });
   }
 
+  @FXML
+  void rebrowse() {
+    TreeItem<ReferenceDescription> item = tableTree.getSelectionModel().getSelectedItem();
+    if (item instanceof DataTreeNode) {
+      ((DataTreeNode)item).rebrowse();
+    }
+  }
+  
   @FXML
   void copyValue() {
     if (!tableTree.isFocused()) {

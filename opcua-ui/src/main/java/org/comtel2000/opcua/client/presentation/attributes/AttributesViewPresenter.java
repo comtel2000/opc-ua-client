@@ -15,7 +15,6 @@ package org.comtel2000.opcua.client.presentation.attributes;
 
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
@@ -34,6 +33,7 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
+import org.jooq.lambda.tuple.Tuple2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +45,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.input.Clipboard;
@@ -73,6 +74,8 @@ public class AttributesViewPresenter implements Initializable {
   @FXML
   private MenuItem refreshItem;
 
+  private final ProgressIndicator progress = new ProgressIndicator(-1);
+
   private final ObjectProperty<ReferenceDescription> selectedReference = new SimpleObjectProperty<>();
   private final ObjectProperty<DataValue> selectedDataValue = new SimpleObjectProperty<>();
 
@@ -80,7 +83,8 @@ public class AttributesViewPresenter implements Initializable {
 
   @Override
   public void initialize(URL url, ResourceBundle rb) {
-
+    progress.setVisible(false);
+    table.setPlaceholder(progress);
     attribute.setCellValueFactory(param -> param.getValue().attributeProperty());
     value.setCellValueFactory(param -> param.getValue().valueProperty());
     value.setCellFactory(new AttributeItemCellFactory());
@@ -144,9 +148,10 @@ public class AttributesViewPresenter implements Initializable {
   }
 
   private void updateAttributes(final ReferenceDescription b) {
-    table.getItems().clear();
     selectedReference.set(b);
     selectedDataValue.set(null);
+    table.getItems().clear();
+
     if (b == null) {
       return;
     }
@@ -155,48 +160,64 @@ public class AttributesViewPresenter implements Initializable {
       table.getItems().addAll(getAttributes(b));
       return;
     }
-
+    progress.setVisible(true);
     connection
         .read(b.getNodeId().local().get(),
             Lists.newArrayList(AttributeId.Description.uid(), AttributeId.AccessLevel.uid(), AttributeId.UserAccessLevel.uid(), AttributeId.Value.uid()))
         .thenApply(d -> {
-          List<AttributeItem> additionals = getAttributes(b);
           if (d.size() < 4) {
-            return additionals;
+            throw new RuntimeException(String.format("read node %s failed (%s)", b.getNodeId().local().get(), d.get(0).getStatusCode()));
           }
-          DataValue descr = d.get(0);
-          additionals.add(AttributeItem.get("Description", OpcUaConverter.toString(descr.getValue())));
-          DataValue accessLevel = d.get(1);
-          EnumSet<AccessLevel> level = OpcUaConverter.AccessLevel.fromMask((UByte) accessLevel.getValue().getValue());
-          additionals.add(AttributeItem.get("AccessLevel", OpcUaConverter.toString(level)));
-          DataValue userAccessLevel = d.get(2);
-          EnumSet<AccessLevel> userLevel = OpcUaConverter.AccessLevel.fromMask((UByte) userAccessLevel.getValue().getValue());
-          additionals.add(AttributeItem.get("UserAccessLevel", OpcUaConverter.toString(userLevel)));
-
-          DataValue value = d.get(3);
-          selectedDataValue.set(value);
-          additionals
-              .add(AttributeItem.get("Value", OpcUaConverter.toString(value.getValue()), level.contains(AccessLevel.CurrentWrite) && isSupported(value)));
-          value.getValue().getDataType().ifPresent(v -> additionals.add(AttributeItem.get("Value (DataType)", OpcUaConverter.toDataTypeString(v))));
-          Optional.ofNullable(value.getSourceTime()).ifPresent(v -> additionals.add(AttributeItem.get("Value (SourceTime)", OpcUaConverter.toString(v))));
-          Optional.ofNullable(value.getSourcePicoseconds()).ifPresent(v -> additionals.add(AttributeItem.get("Value (SourcePicoseconds)", v.toString())));
-          Optional.ofNullable(value.getServerTime()).ifPresent(v -> additionals.add(AttributeItem.get("Value (ServerTime)", OpcUaConverter.toString(v))));
-          Optional.ofNullable(value.getServerPicoseconds()).ifPresent(v -> additionals.add(AttributeItem.get("Value (ServerPicoseconds)", v.toString())));
-          additionals.add(AttributeItem.get("Value (StatusCode)", OpcUaConverter.toString(value.getStatusCode())));
-          return additionals;
+          List<AttributeItem> additionals = getAttributes(b);
+          final DataValue descr = d.get(0);
+          if (descr.getStatusCode().isGood()) {
+            additionals.add(AttributeItem.get("Description", OpcUaConverter.toString(descr.getValue())));
+          } else {
+            throw new RuntimeException(String.format("read node %s failed (%s)", b.getNodeId().local().get(), d.get(0).getStatusCode()));
+          }
+          final DataValue accessLevel = d.get(1);
+          EnumSet<AccessLevel> level = null;
+          if (accessLevel.getStatusCode().isGood()) {
+            level = OpcUaConverter.AccessLevel.fromMask((UByte) accessLevel.getValue().getValue());
+            additionals.add(AttributeItem.get("AccessLevel", OpcUaConverter.toString(level)));
+          }
+          final DataValue userAccessLevel = d.get(2);
+          if (userAccessLevel.getStatusCode().isGood()) {
+            EnumSet<AccessLevel> userLevel = OpcUaConverter.AccessLevel.fromMask((UByte) userAccessLevel.getValue().getValue());
+            additionals.add(AttributeItem.get("UserAccessLevel", OpcUaConverter.toString(userLevel)));
+          }
+          final DataValue value = d.get(3);
+          if (value.getStatusCode().isGood()) {
+            additionals.add(AttributeItem.get("Value", OpcUaConverter.toString(value.getValue()),
+                level != null && level.contains(AccessLevel.CurrentWrite) && isSupported(value)));
+            value.getValue().getDataType().ifPresent(v -> additionals.add(AttributeItem.get("Value (DataType)", OpcUaConverter.toDataTypeString(v))));
+            Optional.ofNullable(value.getSourceTime()).ifPresent(v -> additionals.add(AttributeItem.get("Value (SourceTime)", OpcUaConverter.toString(v))));
+            Optional.ofNullable(value.getSourcePicoseconds()).ifPresent(v -> additionals.add(AttributeItem.get("Value (SourcePicoseconds)", v.toString())));
+            Optional.ofNullable(value.getServerTime()).ifPresent(v -> additionals.add(AttributeItem.get("Value (ServerTime)", OpcUaConverter.toString(v))));
+            Optional.ofNullable(value.getServerPicoseconds()).ifPresent(v -> additionals.add(AttributeItem.get("Value (ServerPicoseconds)", v.toString())));
+            additionals.add(AttributeItem.get("Value (StatusCode)", OpcUaConverter.toString(value.getStatusCode())));
+          }
+          return new Tuple2<>(additionals, value);
         }).whenCompleteAsync((l, th) -> {
           if (th != null) {
+            state.statusTextProperty().set(th.getMessage());
             logger.error(th.getMessage(), th);
           }
-          if (l != null){
-            table.getItems().addAll(l);
+          if (selectedReference.get() == b && l != null) {
+            progress.setVisible(false);
+            table.getItems().addAll(l.v1 != null ? l.v1 : getAttributes(b));
+            selectedDataValue.set(l.v2);
           }
+
         }, Platform::runLater);
 
   }
 
-  private List<AttributeItem> getAttributes(ReferenceDescription b){
+  private List<AttributeItem> getAttributes(ReferenceDescription b) {
     final List<AttributeItem> list = new ArrayList<>();
+    if (b == null) {
+      return list;
+    }
     list.add(AttributeItem.get("DisplayName", b.getDisplayName().getText()));
     list.add(AttributeItem.get("BrowseName", b.getBrowseName().toParseableString()));
     list.add(AttributeItem.get("NodeId", b.getNodeId().toParseableString()));
@@ -205,9 +226,10 @@ public class AttributesViewPresenter implements Initializable {
     list.add(AttributeItem.get("Forward", String.valueOf(b.getIsForward())));
     list.add(AttributeItem.get("TypeId", b.getTypeId().toParseableString()));
     list.add(AttributeItem.get("TypeDefinition", b.getTypeDefinition().toParseableString()));
+
     return list;
   }
-  
+
   private boolean isSupported(DataValue value) {
     if (!value.getValue().getDataType().isPresent() || !value.getValue().getDataType().isPresent()) {
       return false;

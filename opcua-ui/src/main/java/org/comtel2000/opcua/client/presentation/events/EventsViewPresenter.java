@@ -59,7 +59,7 @@ import javafx.stage.FileChooser.ExtensionFilter;
 
 public class EventsViewPresenter implements Initializable {
 
-  private final static Logger logger = LoggerFactory.getLogger(EventsViewPresenter.class);
+  private static final Logger logger = LoggerFactory.getLogger(EventsViewPresenter.class);
 
   @Inject
   OpcUaClientConnector connection;
@@ -116,6 +116,9 @@ public class EventsViewPresenter implements Initializable {
   @Override
   public void initialize(URL url, ResourceBundle rb) {
     this.rb = rb;
+    
+    table.setRowFactory(new MonitoredEventRowFactory<MonitoredEvent>());
+    
     id.setCellValueFactory(p -> new ReadOnlyStringWrapper(
         String.format("%s (%s)", p.getValue().getSubscription().getSubscriptionId(), p.getValue().getMonitoredItem().getMonitoredItemId())));
 

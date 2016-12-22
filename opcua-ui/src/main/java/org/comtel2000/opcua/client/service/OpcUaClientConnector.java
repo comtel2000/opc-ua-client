@@ -42,6 +42,7 @@ import org.eclipse.milo.opcua.sdk.client.api.UaClient;
 import org.eclipse.milo.opcua.sdk.client.api.UaSession;
 import org.eclipse.milo.opcua.sdk.client.api.config.OpcUaClientConfig;
 import org.eclipse.milo.opcua.sdk.client.api.identity.AnonymousProvider;
+import org.eclipse.milo.opcua.sdk.client.api.identity.CompositeProvider;
 import org.eclipse.milo.opcua.sdk.client.api.identity.IdentityProvider;
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaMonitoredItem;
 import org.eclipse.milo.opcua.sdk.client.api.subscriptions.UaSubscription;
@@ -156,9 +157,12 @@ public class OpcUaClientConnector implements SessionActivityListener {
       logger.warn("fix search (returned) endpoint url missmatch: {} ({})", url, endpointDescription.get().getEndpointUrl());
       endpointDescription.set(changeEndpointUrl(endpointDescription.get(), url));
     }
+    List<IdentityProvider> idProv = new ArrayList<>();
+    getIdentityProvider().ifPresent(idProv::add);
+    idProv.add(new AnonymousProvider());
 
     OpcUaClientConfig config = OpcUaClientConfig.builder().setApplicationName(LocalizedText.english(name)).setApplicationUri("urn:comtel:opcua:client")
-        .setEndpoint(endpointDescription.get()).setIdentityProvider(getIdentityProvider().orElse(new AnonymousProvider())).setRequestTimeout(uint(5000))
+        .setEndpoint(endpointDescription.get()).setIdentityProvider(new CompositeProvider(idProv)).setRequestTimeout(uint(5000))
         .build();
 
     return newClient(config).thenCompose(c -> c.connect());
@@ -301,7 +305,8 @@ public class OpcUaClientConnector implements SessionActivityListener {
   }
 
   public CompletableFuture<BrowseResult> getHierarchicalReferences(NodeId node) {
-    UInteger nodeClassMask = uint(NodeClass.Object.getValue() | NodeClass.Variable.getValue());
+
+    UInteger nodeClassMask = uint(NodeClass.Object.getValue() | NodeClass.Variable.getValue() | NodeClass.Method.getValue());
     UInteger resultMask = uint(BrowseResultMask.All.getValue());
     BrowseDescription bd = new BrowseDescription(node, BrowseDirection.Forward, Identifiers.HierarchicalReferences, true, nodeClassMask, resultMask);
     return browse(bd);

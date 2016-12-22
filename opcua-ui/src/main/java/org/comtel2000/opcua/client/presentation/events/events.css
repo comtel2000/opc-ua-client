@@ -1,3 +1,11 @@
 .table-view {
 	-fx-fixed-cell-size: 24px;
 }
+
+.table-row-cell:bad .text{
+	-fx-fill: red;
+}
+
+.table-row-cell:bad:filled:focused:selected .text{
+	-fx-fill: #ff8000;
+}

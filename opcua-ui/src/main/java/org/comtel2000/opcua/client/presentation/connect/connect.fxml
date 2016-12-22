@@ -18,63 +18,84 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox minHeight="0.0" xmlns="http://javafx.com/javafx/8.0.60" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.comtel2000.opcua.client.presentation.connect.ConnectViewPresenter">
-   <children>
-      <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="tool-bar">
-      	<children>
-            <MenuButton id="menu-button" fx:id="menu" maxHeight="-Infinity" maxWidth="-Infinity" mnemonicParsing="false" prefHeight="25.0" prefWidth="25.0" styleClass="tool-button">
-              <items>
-                <MenuItem fx:id="connectItem" mnemonicParsing="false" onAction="#connect" text="%connect.connect">
-                     <accelerator>
-                        <KeyCodeCombination alt="UP" code="O" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
-                     </accelerator>
-                  </MenuItem>
-                <MenuItem fx:id="disconnectItem" mnemonicParsing="false" onAction="#disconnect" text="%connect.disconnect">
-                     <accelerator>
-                        <KeyCodeCombination alt="UP" code="D" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
-                     </accelerator>
-                  </MenuItem>
-                  <RadioMenuItem fx:id="securityItem" mnemonicParsing="false" text="%connect.security">
-                     <accelerator>
-                        <KeyCodeCombination alt="UP" code="S" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
-                     </accelerator>
-                  </RadioMenuItem>
-                  <SeparatorMenuItem mnemonicParsing="false" />
-                  <MenuItem fx:id="aboutItem" mnemonicParsing="false" onAction="#about" text="%connect.about">
-                  </MenuItem>
-                  <SeparatorMenuItem mnemonicParsing="false" />
-                  <MenuItem fx:id="closeItem" mnemonicParsing="false" onAction="#exit" text="%connect.exit">
-                     <accelerator>
-                        <KeyCodeCombination alt="UP" code="Q" control="UP" meta="UP" shift="UP" shortcut="DOWN" />
-                     </accelerator>
-                  </MenuItem>
-              </items>
-            </MenuButton>
-      		<ComboBox fx:id="address" editable="true" maxWidth="1.7976931348623157E308" minWidth="100.0" prefWidth="400.0" HBox.hgrow="SOMETIMES" />
-            <ToggleButton id="secure-button" fx:id="security" contentDisplay="GRAPHIC_ONLY" mnemonicParsing="false" styleClass="tool-button">
-               <graphic>
-                  <Pane prefHeight="12.0" prefWidth="14.0" />
-               </graphic>
-            </ToggleButton>
-      		<Region minWidth="0.0" prefWidth="10.0" HBox.hgrow="SOMETIMES" />
-      		<Button id="" fx:id="connectButton" minWidth="80.0" mnemonicParsing="false" onAction="#connect" styleClass="tool-button" text="%connect.connect" />
-      		<Button id="" fx:id="disconnectButton" contentDisplay="LEFT" minWidth="80.0" mnemonicParsing="false" onAction="#disconnect" styleClass="tool-button" text="%connect.disconnect" textAlignment="LEFT" />
-      	</children>
-      	<padding>
-      		<Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-      	</padding>
-      </HBox>
-      <HBox fx:id="securityPane" alignment="CENTER_LEFT" minHeight="0.0" prefHeight="50.0" prefWidth="200.0" spacing="15.0">
-         <children>
-            <Label text="%connect.user" />
-            <TextField fx:id="user" promptText="%connect.user" />
-            <Label text="%connect.password" />
-            <PasswordField fx:id="password" promptText="%connect.password" />
-            <CheckBox fx:id="anonymous" mnemonicParsing="false" text="%connect.cb.anonymous" />
-         </children>
-         <padding>
-            <Insets bottom="5.0" left="10.0" right="5.0" top="5.0" />
-         </padding>
-      </HBox>
-   </children>
+<VBox minHeight="0.0" xmlns="http://javafx.com/javafx/8.0.60"
+	xmlns:fx="http://javafx.com/fxml/1"
+	fx:controller="org.comtel2000.opcua.client.presentation.connect.ConnectViewPresenter">
+	<children>
+		<HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="tool-bar">
+			<children>
+				<MenuButton id="menu-button" fx:id="menu" maxHeight="-Infinity"
+					maxWidth="-Infinity" mnemonicParsing="false" prefHeight="25.0"
+					prefWidth="25.0" styleClass="tool-button">
+					<items>
+						<MenuItem fx:id="connectItem" mnemonicParsing="false"
+							onAction="#connect" text="%connect.connect">
+							<accelerator>
+								<KeyCodeCombination alt="UP" code="O"
+									control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+							</accelerator>
+						</MenuItem>
+						<MenuItem fx:id="disconnectItem" mnemonicParsing="false"
+							onAction="#disconnect" text="%connect.disconnect">
+							<accelerator>
+								<KeyCodeCombination alt="UP" code="D"
+									control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+							</accelerator>
+						</MenuItem>
+						<RadioMenuItem fx:id="securityItem" mnemonicParsing="false"
+							text="%connect.security">
+							<accelerator>
+								<KeyCodeCombination alt="UP" code="S"
+									control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+							</accelerator>
+						</RadioMenuItem>
+						<SeparatorMenuItem mnemonicParsing="false" />
+						<MenuItem fx:id="aboutItem" mnemonicParsing="false"
+							onAction="#about" text="%connect.about">
+						</MenuItem>
+						<SeparatorMenuItem mnemonicParsing="false" />
+						<MenuItem fx:id="closeItem" mnemonicParsing="false"
+							onAction="#exit" text="%connect.exit">
+							<accelerator>
+								<KeyCodeCombination alt="UP" code="Q"
+									control="UP" meta="UP" shift="UP" shortcut="DOWN" />
+							</accelerator>
+						</MenuItem>
+					</items>
+				</MenuButton>
+				<ComboBox fx:id="address" editable="true" maxWidth="1.7976931348623157E308"
+					minWidth="100.0" prefWidth="400.0" HBox.hgrow="SOMETIMES" />
+				<ToggleButton id="secure-button" fx:id="security"
+					contentDisplay="GRAPHIC_ONLY" mnemonicParsing="false" styleClass="tool-button">
+					<graphic>
+						<Pane prefHeight="12.0" prefWidth="14.0" />
+					</graphic>
+				</ToggleButton>
+				<Region minWidth="0.0" prefWidth="10.0" HBox.hgrow="SOMETIMES" />
+				<Button id="" fx:id="connectButton" minWidth="80.0"
+					mnemonicParsing="false" onAction="#connect" styleClass="tool-button"
+					text="%connect.connect" />
+				<Button id="" fx:id="disconnectButton" contentDisplay="LEFT"
+					minWidth="80.0" mnemonicParsing="false" onAction="#disconnect"
+					styleClass="tool-button" text="%connect.disconnect" textAlignment="LEFT" />
+			</children>
+			<padding>
+				<Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+			</padding>
+		</HBox>
+		<HBox fx:id="securityPane" alignment="CENTER_LEFT" minHeight="0.0"
+			prefHeight="50.0" prefWidth="200.0" spacing="15.0">
+			<children>
+				<Label text="%connect.user" />
+				<TextField fx:id="user" promptText="%connect.user" />
+				<Label text="%connect.password" />
+				<PasswordField fx:id="password" promptText="%connect.password" />
+				<CheckBox fx:id="anonymous" mnemonicParsing="false"
+					text="%connect.cb.anonymous" />
+			</children>
+			<padding>
+				<Insets bottom="5.0" left="10.0" right="5.0" top="5.0" />
+			</padding>
+		</HBox>
+	</children>
 </VBox>

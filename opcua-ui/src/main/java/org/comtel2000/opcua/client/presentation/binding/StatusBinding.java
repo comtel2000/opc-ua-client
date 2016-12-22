@@ -14,7 +14,6 @@
 package org.comtel2000.opcua.client.presentation.binding;
 
 import org.comtel2000.opcua.client.presentation.datatree.DataTreeNode;
-
 import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 
 import javafx.beans.property.BooleanProperty;
