@@ -19,6 +19,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -28,6 +29,7 @@ import org.comtel2000.opcua.client.service.OpcUaConverter;
 import org.comtel2000.opcua.client.service.OpcUaConverter.AccessLevel;
 import org.eclipse.milo.opcua.stack.core.AttributeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
 import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
@@ -36,8 +38,6 @@ import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
 import org.jooq.lambda.tuple.Tuple2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Lists;
 
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
@@ -155,61 +155,108 @@ public class AttributesViewPresenter implements Initializable {
     if (b == null) {
       return;
     }
-
-    if (!b.getNodeId().isLocal() || b.getNodeClass() != NodeClass.Variable) {
+    if (!b.getNodeId().isLocal()) {
       table.getItems().addAll(getAttributes(b));
       return;
     }
-    progress.setVisible(true);
-    connection
-        .read(b.getNodeId().local().get(),
-            Lists.newArrayList(AttributeId.Description.uid(), AttributeId.AccessLevel.uid(), AttributeId.UserAccessLevel.uid(), AttributeId.Value.uid()))
-        .thenApply(d -> {
-          if (d.size() < 4) {
-            throw new RuntimeException(String.format("read node %s failed (%s)", b.getNodeId().local().get(), d.get(0).getStatusCode()));
-          }
-          List<AttributeItem> additionals = getAttributes(b);
-          final DataValue descr = d.get(0);
-          if (descr.getStatusCode().isGood()) {
-            additionals.add(AttributeItem.get("Description", OpcUaConverter.toString(descr.getValue())));
-          } else {
-            throw new RuntimeException(String.format("read node %s failed (%s)", b.getNodeId().local().get(), d.get(0).getStatusCode()));
-          }
-          final DataValue accessLevel = d.get(1);
-          EnumSet<AccessLevel> level = null;
-          if (accessLevel.getStatusCode().isGood()) {
-            level = OpcUaConverter.AccessLevel.fromMask((UByte) accessLevel.getValue().getValue());
-            additionals.add(AttributeItem.get("AccessLevel", OpcUaConverter.toString(level)));
-          }
-          final DataValue userAccessLevel = d.get(2);
-          if (userAccessLevel.getStatusCode().isGood()) {
-            EnumSet<AccessLevel> userLevel = OpcUaConverter.AccessLevel.fromMask((UByte) userAccessLevel.getValue().getValue());
-            additionals.add(AttributeItem.get("UserAccessLevel", OpcUaConverter.toString(userLevel)));
-          }
-          final DataValue value = d.get(3);
-          if (value.getStatusCode().isGood()) {
-            additionals.add(AttributeItem.get("Value", OpcUaConverter.toString(value.getValue()),
-                level != null && level.contains(AccessLevel.CurrentWrite) && isSupported(value)));
-            value.getValue().getDataType().ifPresent(v -> additionals.add(AttributeItem.get("Value (DataType)", OpcUaConverter.toDataTypeString(v))));
-            Optional.ofNullable(value.getSourceTime()).ifPresent(v -> additionals.add(AttributeItem.get("Value (SourceTime)", OpcUaConverter.toString(v))));
-            Optional.ofNullable(value.getSourcePicoseconds()).ifPresent(v -> additionals.add(AttributeItem.get("Value (SourcePicoseconds)", v.toString())));
-            Optional.ofNullable(value.getServerTime()).ifPresent(v -> additionals.add(AttributeItem.get("Value (ServerTime)", OpcUaConverter.toString(v))));
-            Optional.ofNullable(value.getServerPicoseconds()).ifPresent(v -> additionals.add(AttributeItem.get("Value (ServerPicoseconds)", v.toString())));
-            additionals.add(AttributeItem.get("Value (StatusCode)", OpcUaConverter.toString(value.getStatusCode())));
-          }
-          return new Tuple2<>(additionals, value);
-        }).whenCompleteAsync((l, th) -> {
-          if (th != null) {
-            state.statusTextProperty().set(th.getMessage());
-            logger.error(th.getMessage(), th);
-          }
-          if (selectedReference.get() == b && l != null) {
-            progress.setVisible(false);
-            table.getItems().addAll(l.v1 != null ? l.v1 : getAttributes(b));
-            selectedDataValue.set(l.v2);
-          }
+    
+    final List<AttributeId> atrList;
+    
+    switch (b.getNodeClass()){
+      case Variable:
+        atrList = AttributeId.VARIABLE_NODE_ATTRIBUTES.asList();
+        break;
+      case Object:
+        atrList = AttributeId.OBJECT_NODE_ATTRIBUTES.asList();
+        break;
+      case Method:
+        atrList = AttributeId.METHOD_NODE_ATTRIBUTES.asList();
+        break;
+      case VariableType:
+        atrList = AttributeId.VARIABLE_TYPE_NODE_ATTRIBUTES.asList();
+        break;
+      case ObjectType:
+        atrList = AttributeId.OBJECT_TYPE_NODE_ATTRIBUTES.asList();
+        break;
+      case ReferenceType:
+        atrList = AttributeId.REFERENCE_TYPE_NODE_ATTRIBUTES.asList();
+        break;
+      case DataType:
+        atrList = AttributeId.DATA_TYPE_NODE_ATTRIBUTES.asList();
+        break;
+      case View:
+        atrList = AttributeId.VIEW_NODE_ATTRIBUTES.asList();
+        break;
+      default:
+        table.getItems().addAll(getAttributes(b));
+        return;
+    }
 
-        }, Platform::runLater);
+
+    progress.setVisible(true);
+    connection.read(b.getNodeId().local().get(), atrList.stream().map(AttributeId::uid).collect(Collectors.toList())).thenApply(d -> {
+
+      if (d.size() < atrList.size()) {
+        throw new RuntimeException(String.format("read node %s failed (%s)", b.getNodeId().local().get(), d.get(0).getStatusCode()));
+      }
+      List<AttributeItem> additionals = new ArrayList<>();
+      DataValue value = null;
+      NodeId dataType = null;
+      EnumSet<AccessLevel> level = null;
+      for (int i = 0; i < d.size(); i++) {
+        DataValue tmp = d.get(i);
+        AttributeId aid = atrList.get(i);
+        if (tmp.getStatusCode().isBad()) {
+          logger.error("read attribute: {} failed {}", aid, tmp.getStatusCode());
+          continue;
+        }
+        switch (aid) {
+          case AccessLevel:
+          case UserAccessLevel:
+            level = OpcUaConverter.AccessLevel.fromMask((UByte) tmp.getValue().getValue());
+            additionals.add(AttributeItem.get(aid.toString(), OpcUaConverter.toString(level)));
+            break;
+          case NodeClass:
+            NodeClass nc = NodeClass.from((Integer) tmp.getValue().getValue());
+            additionals.add(AttributeItem.get(aid.toString(), nc.toString()));
+            break;
+          case DataType:
+            dataType = (NodeId) tmp.getValue().getValue();
+            break;
+          case Value:
+            value = tmp;
+            break;
+          default:
+            additionals.add(AttributeItem.get(aid.toString(), OpcUaConverter.toString(tmp.getValue())));
+            break;
+        }
+
+      }
+      if (dataType != null){
+        additionals.add(AttributeItem.get("Value (DataType)", OpcUaConverter.toString(dataType)));
+      }
+      if (value != null) {
+        additionals.add(AttributeItem.get("Value", OpcUaConverter.toString(value.getValue()),
+            level != null && level.contains(AccessLevel.CurrentWrite) && isSupported(value)));
+        Optional.ofNullable(value.getSourceTime()).ifPresent(v -> additionals.add(AttributeItem.get("Value (SourceTime)", OpcUaConverter.toString(v))));
+        Optional.ofNullable(value.getSourcePicoseconds()).ifPresent(v -> additionals.add(AttributeItem.get("Value (SourcePicoseconds)", v.toString())));
+        Optional.ofNullable(value.getServerTime()).ifPresent(v -> additionals.add(AttributeItem.get("Value (ServerTime)", OpcUaConverter.toString(v))));
+        Optional.ofNullable(value.getServerPicoseconds()).ifPresent(v -> additionals.add(AttributeItem.get("Value (ServerPicoseconds)", v.toString())));
+
+      }
+      return new Tuple2<>(additionals, value);
+    }).whenCompleteAsync((l, th) -> {
+      if (th != null) {
+        state.statusTextProperty().set(th.getMessage());
+        logger.error(th.getMessage(), th);
+      }
+      if (selectedReference.get() == b && l != null) {
+        progress.setVisible(false);
+        table.getItems().addAll(l.v1 != null ? l.v1 : getAttributes(b));
+        selectedDataValue.set(l.v2);
+      }
+
+    }, Platform::runLater);
 
   }
 
@@ -218,14 +265,14 @@ public class AttributesViewPresenter implements Initializable {
     if (b == null) {
       return list;
     }
-    list.add(AttributeItem.get("DisplayName", b.getDisplayName().getText()));
-    list.add(AttributeItem.get("BrowseName", b.getBrowseName().toParseableString()));
-    list.add(AttributeItem.get("NodeId", b.getNodeId().toParseableString()));
+    list.add(AttributeItem.get("DisplayName", OpcUaConverter.toString(b.getDisplayName())));
+    list.add(AttributeItem.get("BrowseName", OpcUaConverter.toString(b.getBrowseName())));
+    list.add(AttributeItem.get("NodeId", OpcUaConverter.toString(b.getNodeId())));
     list.add(AttributeItem.get("NodeClass", String.valueOf(b.getNodeClass())));
-    list.add(AttributeItem.get("ReferenceType", b.getReferenceTypeId().toParseableString()));
+    list.add(AttributeItem.get("ReferenceType", OpcUaConverter.toString(b.getReferenceTypeId())));
     list.add(AttributeItem.get("Forward", String.valueOf(b.getIsForward())));
-    list.add(AttributeItem.get("TypeId", b.getTypeId().toParseableString()));
-    list.add(AttributeItem.get("TypeDefinition", b.getTypeDefinition().toParseableString()));
+    list.add(AttributeItem.get("TypeId", OpcUaConverter.toString(b.getTypeId())));
+    list.add(AttributeItem.get("TypeDefinition", OpcUaConverter.toString(b.getTypeDefinition())));
 
     return list;
   }

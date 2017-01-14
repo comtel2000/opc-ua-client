@@ -7,7 +7,8 @@
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>opcua-ui</artifactId>
-	<description>OPC-UA-Client.fx</description>
+	<name>OPC-UA-Client.fx</name>
+	<description>OPC-UA client based on Eclipse Milo and JavaFX</description>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.compiler.source>1.8</maven.compiler.source>
@@ -67,7 +68,7 @@
 						<version>8.7.0</version>
 						<configuration>
 							<vendor>comtel2000</vendor>
-							<appName>${description}</appName>
+							<appName>${project.name}</appName>
 							<mainClass>${app.main.class}</mainClass>
 						</configuration>
 					</plugin>

@@ -86,11 +86,19 @@ public class OpcUaConverter {
     if (variant == null || variant.isNull()) {
       return null;
     }
+    final Object value = variant.getValue();
+
+    if (value instanceof byte[]) {
+      return toString((byte[]) variant.getValue());
+    }
     if (variant.getValue() instanceof String) {
       return (String) variant.getValue();
     }
+    if (variant.getValue() instanceof NodeId) {
+      return toString((NodeId) variant.getValue());
+    }
     if (variant.getValue() instanceof String[]) {
-      return Arrays.toString((String[]) variant.getValue());
+      return toString((String[]) variant.getValue());
     }
     if (variant.getValue() instanceof DateTime) {
       return toString((DateTime) variant.getValue());
@@ -100,6 +108,9 @@ public class OpcUaConverter {
     }
     if (variant.getValue() instanceof XmlElement) {
       return toString((XmlElement) variant.getValue());
+    }
+    if (variant.getValue() instanceof QualifiedName) {
+      return toString((QualifiedName) variant.getValue());
     }
     if (variant.getValue() instanceof ExtensionObject) {
       return toString((ExtensionObject) variant.getValue());
@@ -114,87 +125,38 @@ public class OpcUaConverter {
   }
 
   /**
-   * NodeType to String
+   * NodeType/id to String
    * 
-   * @param node NodeIdType
+   * @param node NodeId type/Id
    * @return String representation
    * 
    * @see: {@link Identifiers}
+   * @see: {@link NodeIdLookup}
    */
-  public static String toDataTypeString(NodeId node) {
+  public static String toString(NodeId node) {
     if (node == null || node.isNull()) {
       return null;
+    }
+    if (node.getIdentifier() == null || !(node.getIdentifier() instanceof UInteger)) {
+      return String.format("%s (%s)", node.getIdentifier(), node.toParseableString());
+    }
+    int id = ((UInteger) node.getIdentifier()).intValue();
+    return String.format("%d (%s)", id, NodeIdLookup.lookup(id));
+  }
+
+  public static String toString(ExpandedNodeId node) {
+    if (node == null || node.isNull()) {
+      return null;
+    }
+    if (node.isLocal()){
+      return toString(node.local().get());
     }
     if (node.getIdentifier() == null && !(node.getIdentifier() instanceof UInteger)) {
       return String.format("%s (%s)", node.getIdentifier(), node.toParseableString());
     }
     int id = ((UInteger) node.getIdentifier()).intValue();
-    switch (id) {
-      case 1:
-        return "Boolean";
-      case 2:
-        return "SByte";
-      case 3:
-        return "Byte";
-      case 4:
-        return "Int16";
-      case 5:
-        return "UInt16";
-      case 6:
-        return "Int32";
-      case 7:
-        return "UInt32";
-      case 8:
-        return "Int64";
-      case 9:
-        return "UInt64";
-      case 10:
-        return "Float";
-      case 11:
-        return "Double";
-      case 12:
-        return "String";
-      case 13:
-        return "DateTime";
-      case 14:
-        return "Guid";
-      case 15:
-        return "ByteString";
-      case 16:
-        return "XmlElement";
-      case 17:
-        return "NodeId";
-      case 18:
-        return "ExpandedNodeId";
-      case 19:
-        return "StatusCode";
-      case 20:
-        return "QualifiedName";
-      case 21:
-        return "LocalizedText";
-      case 22:
-        return "Structure";
-      case 23:
-        return "DataValue";
-      case 24:
-      case 25:
-        return "BaseDataType";
-      case 26:
-        return "Number";
-      case 27:
-        return "Integer";
-      case 28:
-        return "UInteger";
-      case 29:
-        return "Enumeration";
-      case 30:
-        return "Image";
-      default:
-        return String.format("%d (%s)", id, node.toParseableString());
-    }
+    return String.format("%d (%s)", id, NodeIdLookup.lookup(id));
   }
-
-
 
   public static Object toWritableDataTypeObject(NodeId node, String value) throws Exception {
     if (node == null || node.isNull()) {
@@ -213,25 +175,25 @@ public class OpcUaConverter {
         }
         return Boolean.valueOf(value);
       case 2:
-        return Byte.parseByte(value);
+        return Byte.valueOf(value);
       case 3:
         return Unsigned.ubyte(value);
       case 4:
-        return Short.parseShort(value);
+        return Short.valueOf(value);
       case 5:
         return Unsigned.ushort(value);
       case 6:
-        return Integer.parseInt(value);
+        return Integer.valueOf(value);
       case 7:
         return Unsigned.uint(value);
       case 8:
-        return Long.parseLong(value);
+        return Long.valueOf(value);
       case 9:
         return Unsigned.ulong(value);
       case 10:
-        return Float.parseFloat(value);
+        return Float.valueOf(value);
       case 11:
-        return Double.parseDouble(value);
+        return Double.valueOf(value);
       case 12:
         return value;
       case 13:
@@ -277,7 +239,7 @@ public class OpcUaConverter {
     return Instant.ofEpochMilli(time.getJavaTime()).atZone(ZoneId.systemDefault());
   }
 
-  private static String toString(LocalizedText value) {
+  public static String toString(LocalizedText value) {
     return value.getText();
   }
 
@@ -303,14 +265,22 @@ public class OpcUaConverter {
     return d % 1.0 != 0 ? String.format("%s", d) : String.format("%.0f",d);
   }
   
+  public static String toString(QualifiedName qname) {
+    return qname.toParseableString();
+  }
+  
   public static String toString(XmlElement xml) {
     return xml.getFragment();
   }
 
   public static String toString(Object[] data) {
-    return Arrays.toString(data);
+    return Arrays.toString(data.length > 100 ? Arrays.copyOf(data, 100) : data) + (data.length > 100 ? "+" : "");
   }
 
+  public static String toString(byte[] data) {
+    return Arrays.toString(data.length > 100 ? Arrays.copyOf(data, 100) : data) + (data.length > 100 ? "+" : "");
+  }
+  
   public static String toString(ExtensionObject ext) {
     if (ext.getEncodingTypeId() != null && Identifiers.Range_Encoding_DefaultBinary.getIdentifier().equals(ext.getEncodingTypeId().getIdentifier())){
       return toRangeString((ByteString) ext.getEncoded());
@@ -343,4 +313,5 @@ public class OpcUaConverter {
     }
     return al.stream().map(i -> i.toString()).collect(Collectors.joining(", "));
   }
+
 }
