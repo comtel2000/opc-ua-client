@@ -19,10 +19,14 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Optional;
+import java.util.ResourceBundle;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.eclipse.milo.opcua.sdk.core.ValueRank;
 import org.eclipse.milo.opcua.stack.core.Identifiers;
+import org.eclipse.milo.opcua.stack.core.serialization.binary.BinaryDecoder;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ByteString;
 import org.eclipse.milo.opcua.stack.core.types.builtin.DateTime;
 import org.eclipse.milo.opcua.stack.core.types.builtin.ExpandedNodeId;
@@ -36,12 +40,16 @@ import org.eclipse.milo.opcua.stack.core.types.builtin.XmlElement;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
 import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.Unsigned;
+import org.eclipse.milo.opcua.stack.core.types.structured.EUInformation;
+import org.eclipse.milo.opcua.stack.core.types.structured.EndpointUrlListDataType;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 public class OpcUaConverter {
 
+  public static ResourceBundle datatypes = ResourceBundle.getBundle("org.comtel2000.opcua.client.service.datatype");
+  
   public enum AccessLevel {
 
     CurrentRead(0x01),
@@ -141,7 +149,13 @@ public class OpcUaConverter {
       return String.format("%s (%s)", node.getIdentifier(), node.toParseableString());
     }
     int id = ((UInteger) node.getIdentifier()).intValue();
-    return String.format("%d (%s)", id, NodeIdLookup.lookup(id));
+    String nodeName;
+    try {
+      nodeName = datatypes.getString(Integer.toString(id));
+    } catch (Exception e) {
+      nodeName = "Unknown";
+    }
+    return String.format("%d (%s)", id, nodeName);
   }
 
   public static String toString(ExpandedNodeId node) {
@@ -155,7 +169,14 @@ public class OpcUaConverter {
       return String.format("%s (%s)", node.getIdentifier(), node.toParseableString());
     }
     int id = ((UInteger) node.getIdentifier()).intValue();
-    return String.format("%d (%s)", id, NodeIdLookup.lookup(id));
+    String nodeName;
+    try {
+      nodeName = datatypes.getString(Integer.toString(id));
+    } catch (Exception e) {
+      nodeName = "Unknown";
+    }
+    return String.format("%d (%s)", id, nodeName);
+
   }
 
   public static Object toWritableDataTypeObject(NodeId node, String value) throws Exception {
@@ -261,6 +282,17 @@ public class OpcUaConverter {
     return String.format("Range [%s, %s]", toString(low), toString(high));
   }
   
+  public static String toEUInformationString(ByteString bs) {
+    if (bs == null || bs.bytes() == null) {
+      return "EUInformation [unknown]";
+    }
+    BinaryDecoder decoder = new BinaryDecoder();
+    decoder.setBuffer(Unpooled.wrappedBuffer(bs.bytes()).order(Unpooled.LITTLE_ENDIAN));
+    EUInformation eui = EUInformation.decode(decoder);
+    return eui.toString();
+  }
+  
+  
   public static String toString(double d) {
     return d % 1.0 != 0 ? String.format("%s", d) : String.format("%.0f",d);
   }
@@ -282,8 +314,13 @@ public class OpcUaConverter {
   }
   
   public static String toString(ExtensionObject ext) {
-    if (ext.getEncodingTypeId() != null && Identifiers.Range_Encoding_DefaultBinary.getIdentifier().equals(ext.getEncodingTypeId().getIdentifier())){
-      return toRangeString((ByteString) ext.getEncoded());
+    if (ext.getEncodingTypeId() != null && ext.getEncodingTypeId().getIdentifier() != null){
+      if (Identifiers.Range_Encoding_DefaultBinary.getIdentifier().equals(ext.getEncodingTypeId().getIdentifier())){
+        return toRangeString((ByteString) ext.getEncoded());
+      }
+      if (Identifiers.EUInformation_Encoding_DefaultBinary.getIdentifier().equals(ext.getEncodingTypeId().getIdentifier())){
+        return toEUInformationString((ByteString) ext.getEncoded());
+      }
     }
     if (ext.getEncoded() != null && ext.getEncoded() instanceof ByteString) {
       return toString((ByteString) ext.getEncoded());
@@ -314,4 +351,8 @@ public class OpcUaConverter {
     return al.stream().map(i -> i.toString()).collect(Collectors.joining(", "));
   }
 
+  public static String valueRankToString(int rank) {
+    Optional<ValueRank> valueRank = Arrays.stream(ValueRank.values()).filter(v -> v.getValue() == rank).findAny();
+    return String.format("%d (%s)", rank, valueRank.isPresent() ? valueRank.get() : "Unknown");
+  }
 }

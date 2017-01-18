@@ -220,6 +220,10 @@ public class AttributesViewPresenter implements Initializable {
             NodeClass nc = NodeClass.from((Integer) tmp.getValue().getValue());
             additionals.add(AttributeItem.get(aid.toString(), nc.toString()));
             break;
+          case ValueRank:
+            int rank = (Integer) tmp.getValue().getValue();
+            additionals.add(AttributeItem.get(aid.toString(), OpcUaConverter.valueRankToString(rank)));
+            break;
           case DataType:
             dataType = (NodeId) tmp.getValue().getValue();
             break;
@@ -235,6 +239,7 @@ public class AttributesViewPresenter implements Initializable {
       if (dataType != null){
         additionals.add(AttributeItem.get("Value (DataType)", OpcUaConverter.toString(dataType)));
       }
+       
       if (value != null) {
         additionals.add(AttributeItem.get("Value", OpcUaConverter.toString(value.getValue()),
             level != null && level.contains(AccessLevel.CurrentWrite) && isSupported(value)));

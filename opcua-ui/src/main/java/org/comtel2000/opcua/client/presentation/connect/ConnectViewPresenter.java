@@ -170,6 +170,8 @@ public class ConnectViewPresenter implements Initializable {
   void connect() {
     state.progressVisibleProperty().set(true);
     state.rootNodeProperty().set(null);
+    state.showAttributeItemProperty().set(null);
+    
     addressUrl.set(address.getSelectionModel().getSelectedItem());
     logger.debug("try to open url: {}", addressUrl.get());
     connection.getEndpoints(addressUrl.get()).thenCompose(endpoints -> {

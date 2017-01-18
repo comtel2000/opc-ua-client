@@ -70,6 +70,9 @@
 							<vendor>comtel2000</vendor>
 							<appName>${project.name}</appName>
 							<mainClass>${app.main.class}</mainClass>
+							<manifestAttributes>
+								<Implementation-Version>${project.version}</Implementation-Version>
+							</manifestAttributes>
 						</configuration>
 					</plugin>
 				</plugins>

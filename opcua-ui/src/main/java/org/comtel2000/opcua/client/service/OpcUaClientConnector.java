@@ -305,13 +305,16 @@ public class OpcUaClientConnector implements SessionActivityListener {
   }
 
   public CompletableFuture<BrowseResult> getHierarchicalReferences(NodeId node) {
-
-    UInteger nodeClassMask = uint(NodeClass.Object.getValue() | NodeClass.Variable.getValue() | NodeClass.Method.getValue());
-    UInteger resultMask = uint(BrowseResultMask.All.getValue());
-    BrowseDescription bd = new BrowseDescription(node, BrowseDirection.Forward, Identifiers.HierarchicalReferences, true, nodeClassMask, resultMask);
-    return browse(bd);
+    UInteger nodeClassMask = uint(NodeClass.Object.getValue() | NodeClass.Variable.getValue() | NodeClass.Method.getValue() | NodeClass.DataType.getValue());
+    return getHierarchicalReferences(node, nodeClassMask);
   }
 
+  public CompletableFuture<BrowseResult> getHierarchicalReferences(NodeId node, UInteger nodeClassMask) {
+    UInteger resultMask = uint(BrowseResultMask.All.getValue());
+    BrowseDescription bd = new BrowseDescription(node, BrowseDirection.Forward, Identifiers.References, true, nodeClassMask, resultMask);
+    return browse(bd);
+  }
+  
   public ReferenceDescription getRootNode(String displayName) {
     return new ReferenceDescription(Identifiers.RootFolder, Boolean.TRUE, Identifiers.RootFolder.expanded(), QualifiedName.parse("Root"),
         LocalizedText.english(displayName), NodeClass.Unspecified, ExpandedNodeId.NULL_VALUE);
