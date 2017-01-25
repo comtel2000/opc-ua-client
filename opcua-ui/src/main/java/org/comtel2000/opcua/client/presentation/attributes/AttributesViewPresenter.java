@@ -17,8 +17,11 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -76,6 +79,8 @@ public class AttributesViewPresenter implements Initializable {
 
   private final ProgressIndicator progress = new ProgressIndicator(-1);
 
+  private final Map<Object, String> customDataTypeCache = new ConcurrentHashMap<>();
+  
   private final ObjectProperty<ReferenceDescription> selectedReference = new SimpleObjectProperty<>();
   private final ObjectProperty<DataValue> selectedDataValue = new SimpleObjectProperty<>();
 
@@ -236,8 +241,23 @@ public class AttributesViewPresenter implements Initializable {
         }
 
       }
-      if (dataType != null){
-        additionals.add(AttributeItem.get("Value (DataType)", OpcUaConverter.toString(dataType)));
+      if (dataType != null) {
+        String type = OpcUaConverter.toString(dataType);
+        if (type == null) {
+          NodeId node = dataType;
+          String cached = customDataTypeCache.computeIfAbsent(dataType.getIdentifier(), (v) -> {
+            try {
+              logger.debug("search for custom DataType: {}", node.getIdentifier());
+              List<DataValue> list = connection.read(node, AttributeId.DisplayName).get();
+              return !list.isEmpty() ? OpcUaConverter.toString(list.get(0).getValue()) : null;
+            } catch (InterruptedException | ExecutionException e) {
+              logger.error(e.getMessage(), e);
+            }
+            return null;
+          });
+          type = String.format("%s (%s)", dataType.getIdentifier(), cached);
+        }
+        additionals.add(AttributeItem.get("Value (DataType)", type));
       }
        
       if (value != null) {

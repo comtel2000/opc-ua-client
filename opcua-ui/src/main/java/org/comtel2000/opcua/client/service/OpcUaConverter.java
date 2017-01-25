@@ -153,7 +153,7 @@ public class OpcUaConverter {
     try {
       nodeName = datatypes.getString(Integer.toString(id));
     } catch (Exception e) {
-      nodeName = "Unknown";
+      return null;
     }
     return String.format("%d (%s)", id, nodeName);
   }
