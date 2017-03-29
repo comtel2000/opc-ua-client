@@ -1,7 +1,7 @@
 # OPC-UA Client UI
 [![Build Status](https://travis-ci.org/comtel2000/opc-ua-client.png)](https://travis-ci.org/comtel2000/opc-ua-client)  [![License](https://img.shields.io/badge/license-Apache_2-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 
-![screenshot] (doc/opcua_client.png)
+![screenshot](https://github.com/comtel2000/opc-ua-client/blob/master/doc/opcua_client.png)
 
 ## How to build and run
 What is required:
