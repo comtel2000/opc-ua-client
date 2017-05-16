@@ -80,7 +80,7 @@ public class AttributesViewPresenter implements Initializable {
   private final ProgressIndicator progress = new ProgressIndicator(-1);
 
   private final Map<Object, String> customDataTypeCache = new ConcurrentHashMap<>();
-  
+
   private final ObjectProperty<ReferenceDescription> selectedReference = new SimpleObjectProperty<>();
   private final ObjectProperty<DataValue> selectedDataValue = new SimpleObjectProperty<>();
 
@@ -104,7 +104,7 @@ public class AttributesViewPresenter implements Initializable {
           return;
         }
         Variant v = new Variant(OpcUaConverter.toWritableDataTypeObject(dv.getValue().getDataType().get(), event.getNewValue()));
-        DataValue value = new DataValue(v, null, null);
+        DataValue value = DataValue.valueOnly(v);
         connection.writeValue(OpcUaConverter.toNodeId(rd.getNodeId()), value).whenCompleteAsync((s, t) -> {
           if (t != null) {
             logger.error(t.getMessage(), t);
@@ -121,6 +121,7 @@ public class AttributesViewPresenter implements Initializable {
     });
 
     state.showAttributeItemProperty().addListener((l, a, b) -> updateAttributes(b));
+    state.connectedProperty().addListener((l) -> customDataTypeCache.clear());
 
     bindContextMenu();
   }
@@ -164,9 +165,9 @@ public class AttributesViewPresenter implements Initializable {
       table.getItems().addAll(getAttributes(b));
       return;
     }
-    
+
     final List<AttributeId> atrList;
-    
+
     switch (b.getNodeClass()){
       case Variable:
         atrList = AttributeId.VARIABLE_NODE_ATTRIBUTES.asList();
@@ -259,7 +260,7 @@ public class AttributesViewPresenter implements Initializable {
         }
         additionals.add(AttributeItem.get("Value (DataType)", type));
       }
-       
+
       if (value != null) {
         additionals.add(AttributeItem.get("Value", OpcUaConverter.toString(value.getValue()),
             level != null && level.contains(AccessLevel.CurrentWrite) && isSupported(value)));
