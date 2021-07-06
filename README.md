@@ -1,7 +1,11 @@
 # OPC-UA Client UI
-[![Build Status](https://travis-ci.org/comtel2000/opc-ua-client.png)](https://travis-ci.org/comtel2000/opc-ua-client)  [![License](https://img.shields.io/badge/license-Apache_2-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
+[![Build Status](https://travis-ci.org/comtel2000/opc-ua-client.png)](https://travis-ci.org/comtel2000/opc-ua-client) [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fcomtel2000%2Fopc-ua-client.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fcomtel2000%2Fopc-ua-client?ref=badge_shield)
+ [![License](https://img.shields.io/badge/license-Apache_2-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 
 ![screenshot](https://github.com/comtel2000/opc-ua-client/blob/master/doc/opcua_client.png)
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fcomtel2000%2Fopc-ua-client.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fcomtel2000%2Fopc-ua-client?ref=badge_large)
 
 ## How to build and run
 What is required:
