@@ -42,7 +42,7 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<junit.version>4.12</junit.version>
 		<slf4j.version>1.7.25</slf4j.version>
-		<milo.version>0.1.2</milo.version>
+		<milo.version>0.6.8</milo.version>
 	</properties>
 
 	<profiles>
