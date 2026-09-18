@@ -1,0 +1,65 @@
+package org.comtel2000.opcua.client.presentation;
+
+import java.io.IOException;
+import java.net.URL;
+
+import org.comtel2000.opcua.client.presentation.attributes.AttributesView;
+import org.comtel2000.opcua.client.presentation.attributes.AttributesViewPresenter;
+import org.comtel2000.opcua.client.presentation.binding.StatusBinding;
+import org.comtel2000.opcua.client.presentation.connect.ConnectView;
+import org.comtel2000.opcua.client.presentation.connect.ConnectViewPresenter;
+import org.comtel2000.opcua.client.presentation.datatree.DataTreeView;
+import org.comtel2000.opcua.client.presentation.datatree.DataTreeViewPresenter;
+import org.comtel2000.opcua.client.presentation.events.EventsView;
+import org.comtel2000.opcua.client.presentation.events.EventsViewPresenter;
+import org.comtel2000.opcua.client.service.OpcUaClientConnector;
+import org.comtel2000.opcua.client.service.PersistenceService;
+
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+
+public abstract class JavaFxView {
+
+  private final Parent view;
+
+  protected JavaFxView(String fxmlResource, PersistenceService session, StatusBinding state, OpcUaClientConnector connection) {
+    URL location = getClass().getResource(fxmlResource);
+    if (location == null) {
+      throw new IllegalStateException("FXML resource not found: " + fxmlResource + " in " + getClass().getPackageName());
+    }
+
+    FXMLLoader loader = new FXMLLoader(location);
+    loader.setControllerFactory(type -> {
+      if (type == MainViewPresenter.class) {
+        return new MainViewPresenter(session, state, connection);
+      }
+      if (type == ConnectViewPresenter.class) {
+        return new ConnectViewPresenter(session, connection, state, "");
+      }
+      if (type == DataTreeViewPresenter.class) {
+        return new DataTreeViewPresenter(connection, state);
+      }
+      if (type == AttributesViewPresenter.class) {
+        return new AttributesViewPresenter(connection, state);
+      }
+      if (type == EventsViewPresenter.class) {
+        return new EventsViewPresenter(connection, state);
+      }
+      try {
+        return type.getDeclaredConstructor().newInstance();
+      } catch (ReflectiveOperationException e) {
+        throw new IllegalStateException("Unable to instantiate controller: " + type.getName(), e);
+      }
+    });
+
+    try {
+      view = loader.load();
+    } catch (IOException e) {
+      throw new IllegalStateException("Unable to load FXML: " + fxmlResource, e);
+    }
+  }
+
+  public Parent getView() {
+    return view;
+  }
+}

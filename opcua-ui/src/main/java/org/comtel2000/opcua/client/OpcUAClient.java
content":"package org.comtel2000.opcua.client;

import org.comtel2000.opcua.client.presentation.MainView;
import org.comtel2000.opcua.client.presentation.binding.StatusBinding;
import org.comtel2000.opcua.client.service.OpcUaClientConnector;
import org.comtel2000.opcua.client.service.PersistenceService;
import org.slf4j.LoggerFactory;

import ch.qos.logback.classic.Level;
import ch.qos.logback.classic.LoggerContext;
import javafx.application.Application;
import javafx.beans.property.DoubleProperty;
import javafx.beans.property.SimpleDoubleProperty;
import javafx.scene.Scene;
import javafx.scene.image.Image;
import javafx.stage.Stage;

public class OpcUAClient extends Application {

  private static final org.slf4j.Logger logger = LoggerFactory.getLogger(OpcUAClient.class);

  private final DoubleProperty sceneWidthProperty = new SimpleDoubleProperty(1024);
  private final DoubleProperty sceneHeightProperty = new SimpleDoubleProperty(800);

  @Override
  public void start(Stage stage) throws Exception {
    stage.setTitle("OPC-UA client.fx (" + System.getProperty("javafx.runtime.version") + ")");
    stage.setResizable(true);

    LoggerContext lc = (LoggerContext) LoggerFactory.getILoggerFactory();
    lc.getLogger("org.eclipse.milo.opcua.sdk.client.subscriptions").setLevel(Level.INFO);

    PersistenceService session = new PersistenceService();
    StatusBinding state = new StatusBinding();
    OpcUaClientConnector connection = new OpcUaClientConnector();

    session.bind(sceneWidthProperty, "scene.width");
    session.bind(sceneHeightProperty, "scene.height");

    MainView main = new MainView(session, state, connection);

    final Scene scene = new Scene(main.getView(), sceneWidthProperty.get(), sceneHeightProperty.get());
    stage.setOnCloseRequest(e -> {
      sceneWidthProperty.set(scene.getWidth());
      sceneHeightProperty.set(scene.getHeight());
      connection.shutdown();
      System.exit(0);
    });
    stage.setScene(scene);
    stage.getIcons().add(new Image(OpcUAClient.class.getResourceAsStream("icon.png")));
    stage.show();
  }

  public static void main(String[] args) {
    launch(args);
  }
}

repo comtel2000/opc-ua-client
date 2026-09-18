@@ -1,0 +1,19 @@
+opcua-ui/src/main/java/org/comtel2000/opcua/client/presentation/events/EventsView.java
+content":"package org.comtel2000.opcua.client.presentation.events;
+
+import org.comtel2000.opcua.client.presentation.JavaFxView;
+import org.comtel2000.opcua.client.presentation.binding.StatusBinding;
+import org.comtel2000.opcua.client.service.OpcUaClientConnector;
+import org.comtel2000.opcua.client.service.PersistenceService;
+
+public class EventsView extends JavaFxView {
+
+  public EventsView() {
+    this(new OpcUaClientConnector(), new StatusBinding());
+  }
+
+  public EventsView(OpcUaClientConnector connection, StatusBinding state) {
+    super("events.fxml", new PersistenceService(), state, connection);
+  }
+}
+

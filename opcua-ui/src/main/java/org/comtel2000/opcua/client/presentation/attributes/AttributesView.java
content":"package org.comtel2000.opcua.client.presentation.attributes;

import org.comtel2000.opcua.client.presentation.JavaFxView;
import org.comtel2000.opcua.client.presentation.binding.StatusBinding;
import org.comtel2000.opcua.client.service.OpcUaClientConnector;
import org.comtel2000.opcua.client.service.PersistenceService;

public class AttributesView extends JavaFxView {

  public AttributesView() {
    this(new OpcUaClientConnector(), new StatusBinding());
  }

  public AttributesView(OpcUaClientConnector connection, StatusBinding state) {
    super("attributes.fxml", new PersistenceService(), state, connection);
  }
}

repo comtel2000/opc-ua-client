@@ -1,0 +1,18 @@
+opcua-ui/src/main/java/org/comtel2000/opcua/client/presentation/datatree/DataTreeView.java
+content":"package org.comtel2000.opcua.client.presentation.datatree;
+
+import org.comtel2000.opcua.client.presentation.JavaFxView;
+import org.comtel2000.opcua.client.presentation.binding.StatusBinding;
+import org.comtel2000.opcua.client.service.OpcUaClientConnector;
+import org.comtel2000.opcua.client.service.PersistenceService;
+
+public class DataTreeView extends JavaFxView {
+
+  public DataTreeView() {
+    this(new OpcUaClientConnector(), new StatusBinding());
+  }
+
+  public DataTreeView(OpcUaClientConnector connection, StatusBinding state) {
+    super("datatree.fxml", new PersistenceService(), state, connection);
+  }
+}
