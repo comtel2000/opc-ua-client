@@ -1,0 +1,17 @@
+package org.comtel2000.opcua.client.presentation.attributes;
+
+import org.comtel2000.opcua.client.presentation.JavaFxView;
+import org.comtel2000.opcua.client.presentation.binding.StatusBinding;
+import org.comtel2000.opcua.client.service.OpcUaClientConnector;
+import org.comtel2000.opcua.client.service.PersistenceService;
+
+public class AttributesView extends JavaFxView {
+
+  public AttributesView() {
+    this(new OpcUaClientConnector(), new StatusBinding());
+  }
+
+  public AttributesView(OpcUaClientConnector connection, StatusBinding state) {
+    super("attributes.fxml", new PersistenceService(), state, connection);
+  }
+}

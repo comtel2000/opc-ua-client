@@ -1,0 +1,92 @@
+package org.comtel2000.opcua.client.presentation.attributes;
+
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.ResourceBundle;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+
+import org.comtel2000.opcua.client.presentation.binding.StatusBinding;
+import org.comtel2000.opcua.client.service.OpcUaClientConnector;
+import org.comtel2000.opcua.client.service.OpcUaConverter;
+import org.comtel2000.opcua.client.service.OpcUaConverter.AccessLevel;
+import org.eclipse.milo.opcua.stack.core.AttributeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.DataValue;
+import org.eclipse.milo.opcua.stack.core.types.builtin.NodeId;
+import org.eclipse.milo.opcua.stack.core.types.builtin.Variant;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UByte;
+import org.eclipse.milo.opcua.stack.core.types.builtin.unsigned.UInteger;
+import org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
+import org.jooq.lambda.tuple.Tuple2;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javafx.application.Platform;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
+
+public class AttributesViewPresenter implements Initializable {
+
+  @Inject
+  OpcUaClientConnector connection;
+
+  @Inject
+  StatusBinding state;
+
+  public AttributesViewPresenter() {
+    this(new OpcUaClientConnector(), new StatusBinding());
+  }
+
+  public AttributesViewPresenter(OpcUaClientConnector connection, StatusBinding state) {
+    this.connection = connection;
+    this.state = state;
+  }
+
+  @FXML
+  private TableView<AttributeItem> table;
+
+  @FXML
+  private TableColumn<AttributeItem, String> attribute;
+
+  @FXML
+  private TableColumn<AttributeItem, String> value;
+
+  @FXML
+  private MenuItem copyItem;
+
+  @FXML
+  private MenuItem refreshItem;
+
+  private final ProgressIndicator progress = new ProgressIndicator(-1);
+
+  private final Map<Object, String> customDataTypeCache = new ConcurrentHashMap<>();
+  private final ObjectProperty<ReferenceDescription> selectedReference = new SimpleObjectProperty<>();
+  private final ObjectProperty<DataValue> selectedDataValue = new SimpleObjectProperty<>();
+
+  private static final Logger logger = LoggerFactory.getLogger(AttributesViewPresenter.class);
+
+  @Override
+  public void initialize(URL url, ResourceBundle rb) {
+    progress.setVisible(false);
+    table.setPlaceholder(progress);
+    attribute.setCellValueFactory(param -> param.getValue().attributeProperty());
+    value.setCellValueFactory(param -> param.getValue().valueProperty());
+    value.setCellFactory(new AttributeItemCellFactory());
+  }
+}

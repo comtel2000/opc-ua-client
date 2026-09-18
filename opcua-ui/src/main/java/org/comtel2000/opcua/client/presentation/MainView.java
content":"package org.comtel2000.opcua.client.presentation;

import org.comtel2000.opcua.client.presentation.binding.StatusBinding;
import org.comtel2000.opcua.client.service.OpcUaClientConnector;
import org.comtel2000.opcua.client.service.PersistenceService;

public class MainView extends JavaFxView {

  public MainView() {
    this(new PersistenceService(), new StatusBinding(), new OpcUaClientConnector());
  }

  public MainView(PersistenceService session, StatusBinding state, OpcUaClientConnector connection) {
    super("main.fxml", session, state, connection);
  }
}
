@@ -3,15 +3,11 @@ package org.comtel2000.opcua.client.presentation;
 import java.io.IOException;
 import java.net.URL;
 
-import org.comtel2000.opcua.client.presentation.attributes.AttributesView;
 import org.comtel2000.opcua.client.presentation.attributes.AttributesViewPresenter;
-import org.comtel2000.opcua.client.presentation.binding.StatusBinding;
-import org.comtel2000.opcua.client.presentation.connect.ConnectView;
 import org.comtel2000.opcua.client.presentation.connect.ConnectViewPresenter;
-import org.comtel2000.opcua.client.presentation.datatree.DataTreeView;
 import org.comtel2000.opcua.client.presentation.datatree.DataTreeViewPresenter;
-import org.comtel2000.opcua.client.presentation.events.EventsView;
 import org.comtel2000.opcua.client.presentation.events.EventsViewPresenter;
+import org.comtel2000.opcua.client.presentation.binding.StatusBinding;
 import org.comtel2000.opcua.client.service.OpcUaClientConnector;
 import org.comtel2000.opcua.client.service.PersistenceService;
 
