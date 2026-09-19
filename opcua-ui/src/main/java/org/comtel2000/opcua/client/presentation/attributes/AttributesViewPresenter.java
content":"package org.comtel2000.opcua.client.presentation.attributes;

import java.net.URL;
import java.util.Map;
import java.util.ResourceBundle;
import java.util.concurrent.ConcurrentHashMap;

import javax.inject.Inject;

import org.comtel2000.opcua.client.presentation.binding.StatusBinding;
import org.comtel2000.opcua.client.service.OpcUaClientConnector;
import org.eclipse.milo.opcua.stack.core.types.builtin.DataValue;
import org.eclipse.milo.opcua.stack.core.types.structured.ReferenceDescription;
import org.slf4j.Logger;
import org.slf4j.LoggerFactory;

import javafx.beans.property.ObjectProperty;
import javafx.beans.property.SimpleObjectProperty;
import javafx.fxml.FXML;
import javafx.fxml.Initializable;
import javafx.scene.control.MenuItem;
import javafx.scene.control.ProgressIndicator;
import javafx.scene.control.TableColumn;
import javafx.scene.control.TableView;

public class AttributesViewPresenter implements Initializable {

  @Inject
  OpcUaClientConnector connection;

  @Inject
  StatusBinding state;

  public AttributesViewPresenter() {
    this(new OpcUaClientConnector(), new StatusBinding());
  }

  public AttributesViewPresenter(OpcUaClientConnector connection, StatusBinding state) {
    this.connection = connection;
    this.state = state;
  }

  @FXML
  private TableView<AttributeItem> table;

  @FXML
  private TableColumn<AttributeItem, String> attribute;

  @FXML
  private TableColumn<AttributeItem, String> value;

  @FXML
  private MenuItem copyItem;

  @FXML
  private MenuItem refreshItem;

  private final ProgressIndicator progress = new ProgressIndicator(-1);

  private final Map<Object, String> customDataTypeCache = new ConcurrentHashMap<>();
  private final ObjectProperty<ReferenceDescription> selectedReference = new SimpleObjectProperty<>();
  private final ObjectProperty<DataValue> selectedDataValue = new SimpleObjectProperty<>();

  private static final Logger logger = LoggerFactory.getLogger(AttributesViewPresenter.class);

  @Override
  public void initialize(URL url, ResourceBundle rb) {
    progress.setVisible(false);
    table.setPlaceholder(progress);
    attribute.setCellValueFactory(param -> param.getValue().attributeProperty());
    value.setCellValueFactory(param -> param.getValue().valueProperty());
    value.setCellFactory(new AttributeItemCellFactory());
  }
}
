@@ -1,0 +1,86 @@
+package org.comtel2000.opcua.client.presentation.datatree;
+
+import java.net.URL;
+import java.util.ResourceBundle;
+
+import javax.inject.Inject;
+
+import org.comtel2000.opcua.client.presentation.binding.StatusBinding;
+import org.comtel2000.opcua.client.service.OpcUaClientConnector;
+import org.eclipse.milo.opcua.stack.core.types.structured.ReferenceDescription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeTableColumn;
+import javafx.scene.control.TreeTableView;
+
+public class DataTreeViewPresenter implements Initializable {
+
+  private static final Logger logger = LoggerFactory.getLogger(DataTreeViewPresenter.class);
+
+  @Inject
+  OpcUaClientConnector connection;
+
+  @Inject
+  StatusBinding state;
+
+  public DataTreeViewPresenter() {
+    this(new OpcUaClientConnector(), new StatusBinding());
+  }
+
+  public DataTreeViewPresenter(OpcUaClientConnector connection, StatusBinding state) {
+    this.connection = connection;
+    this.state = state;
+  }
+
+  @FXML
+  private TreeTableView<ReferenceDescription> tableTree;
+
+  @FXML
+  private TreeTableColumn<ReferenceDescription, ReferenceDescription> display;
+
+  @FXML
+  private TreeTableColumn<ReferenceDescription, String> browse;
+
+  @FXML
+  private TreeTableColumn<ReferenceDescription, String> node;
+
+  @FXML
+  private MenuItem rebrowseItem;
+
+  @FXML
+  private MenuItem monitorItem;
+
+  @FXML
+  private MenuItem copyItem;
+
+  private final BooleanProperty variableItem = new SimpleBooleanProperty(false);
+
+  @Override
+  public void initialize(URL url, ResourceBundle rb) {
+    tableTree.setRowFactory(new DataTreeNodeRowFactory<ReferenceDescription>());
+    display.setCellValueFactory(p -> new ReadOnlyObjectWrapper<>(p.getValue().getValue()));
+    display.setCellFactory(new DataTreeNodeCellFactory());
+    browse.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue().getBrowseName().toParseableString()));
+    node.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue().getNodeId() != null ? p.getValue().getValue().getNodeId().toParseableString() : ""));
+    tableTree.rootProperty().bind(state.rootNodeProperty());
+    tableTree.getSelectionModel().selectedItemProperty().addListener((l, a, b) -> nodeChanged(b));
+  }
+
+  private void nodeChanged(TreeItem<ReferenceDescription> item) {
+    if (item != null) {
+      item.getChildren();
+      state.showAttributeItemProperty().set(item.getValue());
+    }
+    state.selectedTreeItemProperty().set(item != null ? item.getValue() : null);
+    variableItem.set(item != null && item.getValue() != null && item.getValue().getNodeClass() == org.eclipse.milo.opcua.stack.core.types.enumerated.NodeClass.Variable);
+  }
+}

@@ -1,19 +1,98 @@
-opcua-ui/src/main/java/org/comtel2000/opcua/client/presentation/events/EventsView.java
-content":"package org.comtel2000.opcua.client.presentation.events;
+package org.comtel2000.opcua.client.presentation.events;
 
-import org.comtel2000.opcua.client.presentation.JavaFxView;
+import java.net.URL;
+import java.util.ResourceBundle;
+
+import javax.inject.Inject;
+
 import org.comtel2000.opcua.client.presentation.binding.StatusBinding;
 import org.comtel2000.opcua.client.service.OpcUaClientConnector;
-import org.comtel2000.opcua.client.service.PersistenceService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class EventsView extends JavaFxView {
+import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 
-  public EventsView() {
+public class EventsViewPresenter implements Initializable {
+
+  private static final Logger logger = LoggerFactory.getLogger(EventsViewPresenter.class);
+
+  @Inject
+  OpcUaClientConnector connection;
+
+  @Inject
+  StatusBinding state;
+
+  public EventsViewPresenter() {
     this(new OpcUaClientConnector(), new StatusBinding());
   }
 
-  public EventsView(OpcUaClientConnector connection, StatusBinding state) {
-    super("events.fxml", new PersistenceService(), state, connection);
+  public EventsViewPresenter(OpcUaClientConnector connection, StatusBinding state) {
+    this.connection = connection;
+    this.state = state;
+  }
+
+  private final ObservableList<MonitoredEvent> monitoredItems = FXCollections.observableArrayList();
+
+  @FXML
+  private TableView<MonitoredEvent> table;
+
+  @FXML
+  private TableColumn<MonitoredEvent, String> id;
+
+  @FXML
+  private TableColumn<MonitoredEvent, String> mode;
+
+  @FXML
+  private TableColumn<MonitoredEvent, String> lasterror;
+
+  @FXML
+  private TableColumn<MonitoredEvent, String> variable;
+
+  @FXML
+  private TableColumn<MonitoredEvent, Double> samplingrate;
+
+  @FXML
+  private TableColumn<MonitoredEvent, String> value;
+
+  @FXML
+  private TableColumn<MonitoredEvent, String> quality;
+
+  @FXML
+  private TableColumn<MonitoredEvent, String> timestamp;
+
+  @FXML
+  private MenuItem showItem;
+
+  @FXML
+  private MenuItem removeItem;
+
+  @FXML
+  private MenuItem removeAllItem;
+
+  @FXML
+  private MenuItem exportItem;
+
+  @FXML
+  private MenuItem importItem;
+
+  @Override
+  public void initialize(URL url, ResourceBundle rb) {
+    table.setRowFactory(new MonitoredEventRowFactory<MonitoredEvent>());
+    id.setCellValueFactory(p -> new ReadOnlyStringWrapper(String.format("%s (%s)", p.getValue().getSubscription().getSubscriptionId(), p.getValue().getMonitoredItem().getMonitoredItemId())));
+    mode.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getMonitoredItem().getMonitoringMode().toString()));
+    variable.setCellValueFactory(p -> p.getValue().nameProperty());
+    value.setCellValueFactory(p -> p.getValue().valueProperty());
+    timestamp.setCellValueFactory(p -> p.getValue().timestampProperty());
+    quality.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue() == null ? "" : "good"));
+    lasterror.setCellValueFactory(p -> p.getValue().lasterrorProperty());
+    samplingrate.setCellValueFactory(p -> new ReadOnlyObjectWrapper<>(0.0));
   }
 }
-

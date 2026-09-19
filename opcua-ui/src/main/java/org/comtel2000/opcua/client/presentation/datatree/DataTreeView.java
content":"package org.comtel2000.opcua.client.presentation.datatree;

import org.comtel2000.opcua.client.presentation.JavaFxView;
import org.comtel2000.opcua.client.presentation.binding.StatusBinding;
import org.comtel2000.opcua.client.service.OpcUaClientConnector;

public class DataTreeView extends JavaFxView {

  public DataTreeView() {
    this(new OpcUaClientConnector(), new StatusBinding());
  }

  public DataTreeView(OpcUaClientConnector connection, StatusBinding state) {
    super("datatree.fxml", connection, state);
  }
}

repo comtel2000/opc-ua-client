@@ -1,0 +1,17 @@
+package org.comtel2000.opcua.client.presentation.connect;
+
+import org.comtel2000.opcua.client.presentation.JavaFxView;
+import org.comtel2000.opcua.client.presentation.binding.StatusBinding;
+import org.comtel2000.opcua.client.service.OpcUaClientConnector;
+import org.comtel2000.opcua.client.service.PersistenceService;
+
+public class ConnectView extends JavaFxView {
+
+  public ConnectView() {
+    this(new PersistenceService(), new StatusBinding(), new OpcUaClientConnector());
+  }
+
+  public ConnectView(PersistenceService session, StatusBinding state, OpcUaClientConnector connection) {
+    super("connect.fxml", session, state, connection);
+  }
+}
